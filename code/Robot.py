@@ -6,6 +6,7 @@ Developer: David R. Mohler
 Developed: May 2017"""
 
 import numpy as np
+from numpy.random import randn, random, uniform
 from math import *
 import random
 import matplotlib.pyplot as plt
@@ -30,13 +31,19 @@ class robot:
         self.x = random.random()*world_size
         self.y = random.random()*world_size
         self.orientation = random.random()*2.0*np.pi # relative to x axis
-        # self.world_size = world_size
-        # self.landmarks = []
+        self.world_size = world_size
+        self.landmarks = landmarks
+        self.N = 1000
         self.forward_noise = 0.0
         self.turn_noise = 0.0
         self.sense_noise = 0.0
 
-    def set(self,new_x,new_y,new_orientation):
+    def set_params(self,new_N,new_world_size,new_landmarks):
+        self.N = int(new_N)
+        self.world_size = new_world_size
+        self.landmarks
+
+    def set(self,new_x,new_y,new_orientation): #place the robot at a given spot
         if new_x < 0 or new_x >= world_size:
             raise ValueError('X coordinate out of bounds')
         if new_y < 0 or new_y >= world_size:
@@ -71,7 +78,16 @@ class robot:
             dist += random.gauss(0.0, self.sense_noise)
             z.append(dist)
 
-        return z
+        return z #measure relative to each landmark
+
+    def measurement_prob(self, measurement):
+        #calculates how likely a measurement should be
+
+        prob = 1.0
+        for i in range(len(self.landmarks)):
+            dist = sqrt((self.x - self.landmarks[i][0])**2 + (self.y-self.landmarks[i][1])**2)
+            prob *= self.Gaussian(dist,self.sense_noise,measurement[i])
+        return prob
 
     def move(self,turn,forward):
         if forward < 0:
@@ -85,12 +101,12 @@ class robot:
         #Define x and y motion based upon new bearing relative to the x axis
         x = self.x + (cos(orientation)*dist)
         y = self.y + (sin(orientation)*dist)
-        x %= world_size #cyclic truncate
-        y %= world_size
+        x %= self.world_size #cyclic truncate
+        y %= self.world_size
 
         #set particles
         res = robot()
-        res.set(x,y,orientation)
+        res.set(x,y,orientation) # changes robot's position to the new location
         res.set_noise(self.forward_noise, self.turn_noise, self.sense_noise)
         return res
 
@@ -99,18 +115,39 @@ class robot:
         #with mean mu and variance sigma
         # gauss = scipy.stats.norm(mu,sigma)
         # return gauss
+
+
         return exp(-((mu-x)**2)/(sigma**2)/2.0)/sqrt(2.0*np.pi*(sigma **2))
 
+    #----------------RESAMPLING METHODS--------------------------#
 
+    def multinomial_resample(self,weights,particles):
 
-    def measurement_prob(self, measurement):
-        #calculates how likely a measurement should be
+        p = np.zeros((self.N, 3)) #second param needs to be the same as state params
+        w = np.zeros(self.N)
 
-        prob = 1.0
-        for i in range(len(landmarks)):
-            dist = sqrt((self.x - landmarks[i][0])**2 + (self.y-landmarks[i][1])**2)
-            prob *= self.Gaussian(dist,self.sense_noise,measurement[i])
-        return prob
+        cumulative_sum = np.cumsum(weights)
+        cumulative_sum[-1] = 1.
+        for i in range(self.N):
+            index = np.searchsorted(cumulative_sum, np.random.random(self.N))
+            p[i] = particles[index]
+            w[i] = weights[index]
+
+        #resample according to indexes
+        particles  = p
+
+        weights = w/np.sum(weights)
+
+        return weights, particles
+
+    def resample_from_index(self,particles,weights,indexes):
+        assert len(indexes) == self.N
+
+        particles  = particles[indexes]
+        weights = weights[indexes]
+        weights /= np.sum(weights)
+
+        return weights, particles
 
     def __repr__(self):
         return '[x=%.6s y=%.6s orient=%.6s]' % (str(self.x), str(self.y), str(self.orientation))
@@ -123,3 +160,62 @@ class robot:
             err = sqrt(dx*dx+dy*dy)
             sum+= err
         return sum/float(len(p))
+
+def create_uniform_particles(N,fnoise,tnoise,snoise,world_size,landmarks):
+    p = [] # list of particles
+    for i in range(N): #create a list of particles (uniformly distributed)
+        r = robot()
+        r.set_params(N,world_size,landmarks)
+        r.set_noise(fnoise,tnoise,snoise)
+        p.append(r)
+    return p
+
+# def create_gaussian_particles(self, mean, var):
+#     self.particles[:, 0] = mean[0] + randn(self.N)*var[0]
+#     self.particles[:, 1] = mean[1] + randn(self.N)*var[1]
+#     self.particles[:, 2] = mean[2] + randn(self.N)*var[2]
+#     self.particles[:, 2] %= 2 * np.pi
+
+#Function to calculate the effective sample size
+def neff(weights):
+        return 1. / np.sum(np.square(weights))
+
+#function to estimate the state, not appropriate for multi-modal
+def estimate(weights,particles):
+        """ returns mean and variance """
+        pos=[]
+        for p in range(len(particles)):
+            pos.append([particles[p].x,particles[p].y,particles[p].orientation])
+            # pos[p,0] = particles[p].x#,particles[p].y,particles[p].orientation
+            # pos[p,1] = particles[p].y
+            # pos[p,2] = particles[p].orientation
+        mu = np.average(pos, weights=weights, axis=0) # should contain x,y, and heading
+        var = np.average((pos - mu)**2, weights=weights, axis=0)
+
+
+        return mu, var
+
+
+#---------------------------RESAMPLING METHODS-------------------------------#
+
+def systematic_resample(N,weights,particles):
+    p_new = []
+    index = int(random.random()*N)
+    beta = 0.0
+    maxw = max(weights)
+
+    for i in range(N):
+        beta += random.random()*2.0*maxw
+
+        while beta > weights[index]:
+            beta -= weights[index]
+            index = (index + 1)% N
+
+        p_new.append(particles[index])
+
+    particles = p_new
+
+    return particles
+
+
+# def residual_resample(N,weights,particles) 

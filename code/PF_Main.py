@@ -6,132 +6,86 @@ Developer: David R. Mohler
 Developed: May 2017"""
 
 import Robot
+import visualize
 import numpy as np
+from numpy.random import randn, random, uniform
 from math import *
 import random
 import matplotlib
-matplotlib.use('Qt5Agg')
 import matplotlib.pyplot as plt
 import scipy.stats
-#------------------------------------------------#
-def visualize(robot, step, p , pr, weights):
-    """
-    robot: current robot object
-    step: current step
-    p: list of particles
-    pr: list of resampled particles
-    weights: particle weights  """
-
-    plt.figure("Simple Robot", figsize=(15.,15.))
-    plt.title('Particle Filter, step '+ str(step))
-
-    grid = [0,world_size,0,world_size]
-    plt.axis(grid)
-    plt.grid(b=True, which='major',color='0.75', linestyle='--')
-    plt.xticks([i for i in range(0,int(world_size),5)])
-    plt.yticks([i for i in range(0,int(world_size),5)])
-
-    #draw particles
-    for ind in range(len(p)):
-
-        #particles (ornage)
-        circle = plt.Circle((p[ind].x,p[ind].y),1., facecolor='#ffb266', edgecolor='#994c00', alpha=0.5)
-        plt.gca().add_patch(circle)
-
-        #particles orientation
-        arrow = plt.Arrow(p[ind].x,p[ind].y,2*cos(p[ind].orientation),2*sin(p[ind].orientation),
-                            alpha=1., facecolor='#994c00', edgecolor='#994c00')
-        plt.gca().add_patch(arrow)
-
-    #draw resampled particles
-    for ind in range(len(pr)):
-        # particles (green)
-        circle = plt.Circle((pr[ind].x, pr[ind].y), 1., facecolor='#66ff66', edgecolor='#009900', alpha=0.5)
-        plt.gca().add_patch(circle)
-
-        # particle's orientation
-        arrow = plt.Arrow(pr[ind].x, pr[ind].y, 2*cos(pr[ind].orientation), 2*sin(pr[ind].orientation),
-                            alpha=1., facecolor='#006600', edgecolor='#006600')
-        plt.gca().add_patch(arrow)
-
-    # fixed landmarks of known locations (red)
-    for lm in Robot.landmarks:
-        circle = plt.Circle((lm[0], lm[1]), 1., facecolor='#cc0000', edgecolor='#330000')
-        plt.gca().add_patch(circle)
-
-    # robot's location (blue)
-    circle = plt.Circle((robot.x, robot.y), 1., facecolor='#6666ff', edgecolor='#0000cc')
-    plt.gca().add_patch(circle)
-
-    # robot's orientation
-    arrow = plt.Arrow(robot.x, robot.y, 2*cos(robot.orientation), 2*sin(robot.orientation), alpha=0.5, facecolor='#000000', edgecolor='#000000')
-    plt.gca().add_patch(arrow)
 
 
-    plt.savefig("output/figure_" + str(step) + ".png")
+world_size = 100.0
+landmarks = [[20.0,20.0], [20.0,80.0], [20.0,50.0],
+            [50.0,20.0], [50.0,80.0], [80.0,80.0],
+            [80.0,20.0], [80.0,50.0]]
 
-    plt.close()
-#--------------------------------------------------------------------------#
+#transport needed visualization parameters to the visualization module
+vis = visualize.vis(world_size,landmarks)
+
+#------------------------------USER INPUTS-------------------------------#
+
+while True:
+    try:
+        n = int(input("Input desired number of particles: "))
+
+    except ValueError:
+        print("ERROR: Number of particles must be an integer")
+
+    else:
+        break
+
+while True:
+    try:
+        fnoise = float(input("Input forward noise parameter: "))
+        tnoise = float(input("Input turning noise parameter: "))
+        snoise = float(input("Input sensing noise parameter: "))
+
+    except ValueError:
+        print("ERROR: noise parameters must be an floating point values")
+
+    else:
+        break
+
+while True:
+    try:
+        steps = int(input("Input desired iterations: "))
+
+    except ValueError:
+        print("ERROR: Number of iterations must be an integer")
+        #Possibly add exception for error not in the correct range of values?
+    else:
+        break
+#-----------------------------------------------------------------------------#
+# n = 1000
+# fnoise = 0.05
+# tnoise = 0.05
+# snoise = 5.0
+# steps = 10
 
 
-# while True:
-#     try:
-#         n = int(input("Input desired number of particles: "))
-#
-#     except ValueError:
-#         print("ERROR: Number of particles must be an integer")
-#
-#     else:
-#         break
-#
-# while True:
-#     try:
-#         fnoise = float(input("Input desired forward noise parameter: "))
-#         tnoise = float(input("Input desired turning noise parameter: "))
-#         snoise = float(input("Input desired sensing noise parameter: "))
-#
-#     except ValueError:
-#         print("ERROR: noise parameters must be an floating point values")
-#
-#     else:
-#         break
-#
-# while True:
-#     try:
-#         steps = int(input("Input desired iterations: "))
-#
-#     except ValueError:
-#         print("ERROR: Number of iterations must be an integer")
-#         #Possibly add exception for error not in the correct range of values?
-#     else:
-#         break
+#--------------------PARTICLE FILTERING OPERATIONS-----------------------------#
 
-n = 1000
-fnoise = 0.05
-tnoise = 0.05
-snoise = 5.0
-steps = 10
-
-p = [] # list of particles
-world_size = Robot.world_size
 Bot = Robot.robot()
-Bot.set(50,50,np.pi/2)
-z = Bot.sense()
+Bot.set_params(n,world_size,landmarks) #set robot environment parameters and number
+                                       # of particles desired
+Bot.set(50,50,np.pi/2) # Initial position of the robot, will be randomly initialized otherwise
+z = Bot.sense() #take initial measurement of surroundings
 
-for i in range(n): #create a list of particles (uniformly distributed)
-    r = Robot.robot()
-    r.set_noise(fnoise,tnoise,snoise)
-    p.append(r)
+
+p = Robot.create_uniform_particles(n,fnoise,tnoise,snoise,world_size,landmarks)
+control  = [-0.25,5.0]
 
 for t in range(steps):
     #initialize the robot that we would like to track
-    Bot = Bot.move(0.1,5.0)
-    z = Bot.sense()
+    Bot = Bot.move(control[0],control[1])
+    z = Bot.sense() #take a measurement
 
+    #should develop more sophisticated method for defining robot path
     p2=[]
-
     for i in range(n):
-        p2.append(p[i].move(0.1,5.0))
+         p2.append(p[i].move(control[0],control[1])) # move the particles
     p = p2
 
     w = []
@@ -139,25 +93,23 @@ for t in range(steps):
     for i in range(n):
         w.append(p[i].measurement_prob(z))
 
-    #Resampling with a sample probability proportional to importance weight
-    p3 = []
-
-    index = int(random.random()*n)
-    beta = 0.0
-    mw=max(w)
-
+    w_norm = []
     for i in range(n):
-        beta += random.random()*2.0*mw
+        w_norm.append(w[i]/np.sum(w)) # normalize the importance weights
 
-        while beta > w[index]:
-            beta -= w[index]
-            index = (index + 1) % n
+    neff = int(Robot.neff(w_norm)) #calculate the effective sample size
 
-        p3.append(p[index])
+    flag = False
+    if neff < n/2:
+        p = Robot.systematic_resample(n,w,p)
+        flag = True
 
-    p = p3
-
-    print( 'Step =',t,', Evaluation = ', Bot.eval(Bot,p))
+    print( 'Step =',t,', Evaluation = ', Bot.eval(Bot,p), 'resampled = ',flag , 'neff = ', neff)
     #if (t%10) == 0:
-    visualize(Bot,t,p2,p,w)
-print('p = ',len(p) )
+
+    #returns the mean and variance for each state variable
+    #NOTE: only designed for 3 state variable and is not dynamic presently
+    mu, var = Robot.estimate(w,p)
+    vis.visualize(Bot,t,p2,p,w,mu)
+
+#-----------------------------------------------------------------------------#
