@@ -21,16 +21,21 @@ import scipy.stats
 #
 #     else:
 #         break
-world_size = 100.0
-landmarks = [[20.0,20.0], [20.0,80.0], [20.0,50.0],
-            [50.0,20.0], [50.0,80.0], [80.0,80.0],
+world_size = 500.0
+landmarks = [[20.0,20.0], [20.0,80.0], [80.0,80.0],
             [80.0,20.0], [80.0,50.0]]
+
+
+#
+# [[20.0,20.0], [20.0,80.0], [20.0,50.0],
+#             [50.0,20.0], [50.0,80.0], [80.0,80.0],
+#             [80.0,20.0], [80.0,50.0]]
 
 class robot:
     def __init__(self):
-        self.x = random.random()*world_size
-        self.y = random.random()*world_size
-        self.orientation = random.random()*2.0*np.pi # relative to x axis
+        self.x = 0 #random.random()*world_size
+        self.y = 0 #random.random()*world_size
+        self.orientation = 0 #random.random()*2.0*np.pi # relative to x axis
         self.world_size = world_size
         self.landmarks = landmarks
         self.N = 1000
@@ -45,10 +50,13 @@ class robot:
 
     def set(self,new_x,new_y,new_orientation): #place the robot at a given spot
         if new_x < 0 or new_x >= world_size:
+            print(new_x)
             raise ValueError('X coordinate out of bounds')
         if new_y < 0 or new_y >= world_size:
+            print(new_y)
             raise ValueError('Y coordinate out of bounds')
         if new_orientation < 0 or new_orientation >= 2*np.pi:
+            print(new_orientation)
             raise ValueError('Orientation must be in range [0,2*Pi]')
 
         self.x = float(new_x)
@@ -75,7 +83,7 @@ class robot:
 
         for i in range(len(landmarks)):
             dist = sqrt((self.x - landmarks[i][0]) ** 2 + (self.y - landmarks[i][1]) ** 2)
-            dist += random.gauss(0.0, self.sense_noise)
+            dist += random.gauss(0.0, self.sense_noise) #0 mean noise, user defined standard deviation
             z.append(dist)
 
         return z #measure relative to each landmark
@@ -94,7 +102,10 @@ class robot:
             raise ValueError('Robot can only move forward')
 
         #turn, and add randomness to the command
+
+
         orientation = self.orientation + float(turn) + random.gauss(0.0,self.turn_noise)
+
         orientation %= 2*np.pi
 
         dist = float(forward) + random.gauss(0.0,self.forward_noise)
@@ -140,14 +151,7 @@ class robot:
 
         return weights, particles
 
-    def resample_from_index(self,particles,weights,indexes):
-        assert len(indexes) == self.N
 
-        particles  = particles[indexes]
-        weights = weights[indexes]
-        weights /= np.sum(weights)
-
-        return weights, particles
 
     def __repr__(self):
         return '[x=%.6s y=%.6s orient=%.6s]' % (str(self.x), str(self.y), str(self.orientation))
@@ -163,18 +167,40 @@ class robot:
 
 def create_uniform_particles(N,fnoise,tnoise,snoise,world_size,landmarks):
     p = [] # list of particles
+
     for i in range(N): #create a list of particles (uniformly distributed)
+        rand_posx =  random.random()*world_size
+        rand_posy = random.random()*world_size
+        rand_hdg = random.random()*2.0*np.pi # relative to x axis
         r = robot()
         r.set_params(N,world_size,landmarks)
         r.set_noise(fnoise,tnoise,snoise)
+        r.set(rand_posx,rand_posy,rand_hdg)
+
         p.append(r)
     return p
 
-# def create_gaussian_particles(self, mean, var):
-#     self.particles[:, 0] = mean[0] + randn(self.N)*var[0]
-#     self.particles[:, 1] = mean[1] + randn(self.N)*var[1]
-#     self.particles[:, 2] = mean[2] + randn(self.N)*var[2]
-#     self.particles[:, 2] %= 2 * np.pi
+
+#print("x = ", rand_posx, ", Y = ", rand_posy, ", Heading = ", rand_hdg)
+# def create_gaussian_particles(N,fnoise,tnoise,snoise,world_size,landmarks,mean,var):
+#     p = [] # list of particles
+#
+#     for i in range(N): #create a list of particles (uniformly distributed)
+#         rand_posx =  mean[0] + randn(self.N)*var[0] #np.random.standard_normal()*world_size
+#         rand_posy = np.random.standard_normal()*world_size
+#         rand_hdg = np.random.standard_normal()*2.0*np.pi # relative to x axis
+#         r = robot()
+#         r.set_params(N,world_size,landmarks)
+#         r.set_noise(fnoise,tnoise,snoise)
+#         r.set(rand_posx,rand_posy,rand_hdg)
+#
+#         p.append(r)
+#     return p
+#
+#     # self.particles[:, 0] = mean[0] + randn(self.N)*var[0]
+#     # self.particles[:, 1] = mean[1] + randn(self.N)*var[1]
+#     # self.particles[:, 2] = mean[2] + randn(self.N)*var[2]
+#     # self.particles[:, 2] %= 2 * np.pi
 
 #Function to calculate the effective sample size
 def neff(weights):
@@ -195,8 +221,52 @@ def estimate(weights,particles):
 
         return mu, var
 
+def PRMSE(truth,mean_estimate):#pass the list of truth positions and
+                               #list of lists containing mean estimates
+    n = len(mean_estimate) #number of trials ran
+    t = len(mean_estimate[0]) #total time steps
+
+    PRMSE = []
+
+    x_diffsq = [[] for i in range(n)]
+    diffsq = [[] for i in range(t)]
+    dist = [[] for i in range(n)]
+
+
+    for i in range(n): #compare each set of mean estimates against the truth, sum, and average
+        for j in range(t):
+            dist[i].append(sqrt((mean_estimate[i][j][0]-truth[j+1][0])**2 + (mean_estimate[i][j][1]-truth[j+1][1])**2))
+            if j == t-1:
+                print("estimate: (", mean_estimate[i][j][0],mean_estimate[i][j][1], ") truth: (", truth[j+1][0],truth[j+1][1],")")
+                print("dist: ", dist[i][j])
+
+
+    for j in range(t):
+        for i in range(n):
+            #restructure for summation
+            diffsq[j].append(dist[i][j])
+        err_sum = 0
+        err_sum = np.sum(diffsq[j])
+        RMSE = sqrt(err_sum/n)
+        PRMSE.append(RMSE)
+        if j == t-1:
+            print("squared diff: ", diffsq[j])
+            print("summation: ", err_sum)
+            print("RMSE: ", RMSE)
+            print(PRMSE)
+    return PRMSE
 
 #---------------------------RESAMPLING METHODS-------------------------------#
+def resample_from_index(N,particles,weights,indexes):
+    assert len(indexes) == N
+
+    particles  = particles[indexes]
+    weights = weights[indexes]
+    weights /= np.sum(weights)
+
+    return weights, particles
+#THIS FUNCTION NEEDS TO BE CONVERTED TO HANDLE THE ROBOT OBJECT
+
 
 def systematic_resample(N,weights,particles):
     p_new = []
@@ -204,18 +274,29 @@ def systematic_resample(N,weights,particles):
     beta = 0.0
     maxw = max(weights)
 
+
     for i in range(N):
         beta += random.random()*2.0*maxw
+        #print(index,weights[index],beta)
+
 
         while beta > weights[index]:
             beta -= weights[index]
             index = (index + 1)% N
 
         p_new.append(particles[index])
+        # print("Particle appended: ",particles[index], ", from index: ", index, ", total particles: ", len(p_new))
 
     particles = p_new
 
     return particles
 
 
-# def residual_resample(N,weights,particles) 
+#DERIVE THIS BY HAND, FIGURE OUT THE ALGORITHM...
+# Residual systematic
+# def RS_resample(N,weights,particles):
+#     p_new = []
+#     U = np.random.random()/N #Generate a random number between 0 and 1/N
+#
+#     for m in range(N):
+#         index = np.floor((weights[m]-U)*N)

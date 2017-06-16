@@ -35,8 +35,8 @@ class vis:
         grid = [0,self.world_size,0,self.world_size]
         plt.axis(grid)
         plt.grid(b=True, which='major',color='0.75', linestyle='--')
-        plt.xticks([i for i in range(0,int(self.world_size),5)])
-        plt.yticks([i for i in range(0,int(self.world_size),5)])
+        plt.xticks([i for i in range(0,int(self.world_size),50)])
+        plt.yticks([i for i in range(0,int(self.world_size),50)])
 
         #draw particles
         for ind in range(len(p)):
