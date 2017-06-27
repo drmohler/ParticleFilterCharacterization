@@ -61,8 +61,8 @@ n = 500
 fnoise = 0.2
 tnoise = 0.2
 snoise = 1.0
-steps = 4
-trials = 3
+steps = 12
+trials = 8
 
 #--------------------PARTICLE FILTERING OPERATIONS-----------------------------#
 
@@ -137,7 +137,6 @@ for t in range(steps):
             #returns the mean and variance for each state variable
             #NOTE: only designed for 3 state variable and is not dynamic presently
             mu, var = Robot.estimate(w_norm,p[j])
-            time += 1
             mean_estimate[j].append(mu)
             j += 1
             # Store state est. for all trials
