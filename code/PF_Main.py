@@ -7,7 +7,6 @@ Developed: May 2017"""
 
 import Robot
 import visualize
-
 import numpy as np
 from numpy.random import randn, random, uniform
 from math import *
@@ -17,13 +16,11 @@ import matplotlib.pyplot as plt
 import matplotlib.animation as animation
 import scipy.stats
 
-
 world_size = 500.0
 landmarks = [[100.0,400.0], [250.0,100.0], [400.0,400.0]]
 
 #transport needed visualization parameters to the visualization module
 vis = visualize.vis(world_size,landmarks)
-
 #------------------------------USER INPUTS-------------------------------#
 
 # while True:
@@ -64,16 +61,14 @@ n = 500
 fnoise = 0.2
 tnoise = 0.2
 snoise = 1.0
-steps = 24
-trials = 8
+steps = 4
+trials = 3
 
 #--------------------PARTICLE FILTERING OPERATIONS-----------------------------#
 
 Bot = Robot.robot()
-
 Bot.set_params(n,world_size,landmarks) #set robot environment parameters and number
                                        # of particles desired
-
 
 state = [250.0,250.0,1.0,0.0]
 #Bot.set_noise(fnoise,tnoise,snoise) #WHY IS THIS BAD NEWS??
@@ -87,8 +82,6 @@ z = Bot.sense() #take initial measurement of surroundings
 p = []
 for i in range(trials): #generate a particle set for each trial (list of lists)
     p.append(Robot.create_uniform_particles(n,fnoise,tnoise,snoise,world_size,landmarks))
-
-time = 0
 
 mean_estimate = [[]for i in range(trials)]
 
@@ -105,7 +98,6 @@ for t in range(steps):
             state[3] = np.radians(15.0)
         else:
             state[3] = 0
-
 
         #initialize the robot that we would like to track
         Bot = Bot.move(state[3],state[2])
@@ -131,18 +123,17 @@ for t in range(steps):
 
             w_norm = []
             for i in range(n):
-                w_norm.append(w[i]/np.sum(w)) # normalize the importance weights
+                w_norm.append((w[i])/np.sum(w)) # normalize the importance weights
 
+            shrtWeights = ["%.3f" % elem for elem in w_norm] # show weight values to 3 decimals
             neff = int(Robot.neff(w_norm)) #calculate the effective sample size
 
             # flag = False
-            # if neff < n/2:
-            p[j] = Robot.systematic_resample(n,w_norm,p[j])
-                # flag = True
-
+            if neff < n/2:
+                # p[j] = Robot.systematic_resample(n,w_norm,p[j])
+                p[j] = Robot.RS_resample(n,w_norm,p[j])
+            # flag = True
             # print( 'Step =',t,', Evaluation = ', Bot.eval(Bot,p), ', neff = ', neff)
-            #if (t%10) == 0:
-
             #returns the mean and variance for each state variable
             #NOTE: only designed for 3 state variable and is not dynamic presently
             mu, var = Robot.estimate(w_norm,p[j])
@@ -152,29 +143,11 @@ for t in range(steps):
             # Store state est. for all trials
 
 #Now use the stored mean estimates to calculate the PRMSE of the filter
-
 PRMSE = Robot.PRMSE(true_pos,mean_estimate)
-# print(PRMSE)
 plt.plot(PRMSE)
 plt.show()
-
-        # PRMSE.append(Robot.PRMSE(true_pos,mean_estimate))
-        # print("truth   : ",Bot)
-        # print("mean estimate: ", mu)
-
-
-        # vis.visualize(Bot,t,p2,p,w_norm,mu)
-
-        # for t in range(steps):
-        #     print("PRMS at time [",t,"]: ", PRMSE[t])
-print(len(mean_estimate))
-print(len(mean_estimate[0]))
-# print(mean_estimate[0][0][0])
-# print(mean_estimate[0][0])
-# print(mean_estimate[0])
-
-
-
+# PRMSE.append(Robot.PRMSE(true_pos,mean_estimate))
+# vis.visualize(Bot,t,p2,p,w_norm,mu)
 
 for x,y in true_pos:
     xt_pos = [i[0] for i in true_pos]
@@ -184,12 +157,5 @@ for x,y in true_pos:
         xe_pos = [i[0] for i in mean_estimate[j]]
         ye_pos = [i[1] for i in mean_estimate[j]]
         plt.plot(xe_pos,ye_pos, '-o',markeredgecolor="black")
-
-
-
-    # plt.plot(mean_estimate[i])
 plt.show()
-# print(true_pos)
-
-
 #-----------------------------------------------------------------------------#

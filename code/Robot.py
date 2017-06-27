@@ -22,14 +22,7 @@ import scipy.stats
 #     else:
 #         break
 world_size = 500.0
-landmarks = [[20.0,20.0], [20.0,80.0], [80.0,80.0],
-            [80.0,20.0], [80.0,50.0]]
-
-
-#
-# [[20.0,20.0], [20.0,80.0], [20.0,50.0],
-#             [50.0,20.0], [50.0,80.0], [80.0,80.0],
-#             [80.0,20.0], [80.0,50.0]]
+landmarks = [[100.0,400.0], [250.0,100.0], [400.0,400.0]]
 
 class robot:
     def __init__(self):
@@ -38,7 +31,7 @@ class robot:
         self.orientation = 0 #random.random()*2.0*np.pi # relative to x axis
         self.world_size = world_size
         self.landmarks = landmarks
-        self.N = 1000
+        self.N = 500
         self.forward_noise = 0.0
         self.turn_noise = 0.0
         self.sense_noise = 0.0
@@ -102,10 +95,7 @@ class robot:
             raise ValueError('Robot can only move forward')
 
         #turn, and add randomness to the command
-
-
         orientation = self.orientation + float(turn) + random.gauss(0.0,self.turn_noise)
-
         orientation %= 2*np.pi
 
         dist = float(forward) + random.gauss(0.0,self.forward_noise)
@@ -126,8 +116,6 @@ class robot:
         #with mean mu and variance sigma
         # gauss = scipy.stats.norm(mu,sigma)
         # return gauss
-
-
         return exp(-((mu-x)**2)/(sigma**2)/2.0)/sqrt(2.0*np.pi*(sigma **2))
 
     #----------------RESAMPLING METHODS--------------------------#
@@ -143,15 +131,11 @@ class robot:
             index = np.searchsorted(cumulative_sum, np.random.random(self.N))
             p[i] = particles[index]
             w[i] = weights[index]
-
         #resample according to indexes
         particles  = p
-
         weights = w/np.sum(weights)
 
         return weights, particles
-
-
 
     def __repr__(self):
         return '[x=%.6s y=%.6s orient=%.6s]' % (str(self.x), str(self.y), str(self.orientation))
@@ -176,10 +160,8 @@ def create_uniform_particles(N,fnoise,tnoise,snoise,world_size,landmarks):
         r.set_params(N,world_size,landmarks)
         r.set_noise(fnoise,tnoise,snoise)
         r.set(rand_posx,rand_posy,rand_hdg)
-
         p.append(r)
     return p
-
 
 #print("x = ", rand_posx, ", Y = ", rand_posy, ", Heading = ", rand_hdg)
 # def create_gaussian_particles(N,fnoise,tnoise,snoise,world_size,landmarks,mean,var):
@@ -218,7 +200,6 @@ def estimate(weights,particles):
         mu = np.average(pos, weights=weights, axis=0) # should contain x,y, and heading
         var = np.average((pos - mu)**2, weights=weights, axis=0)
 
-
         return mu, var
 
 def PRMSE(truth,mean_estimate):#pass the list of truth positions and
@@ -227,19 +208,16 @@ def PRMSE(truth,mean_estimate):#pass the list of truth positions and
     t = len(mean_estimate[0]) #total time steps
 
     PRMSE = []
-
     x_diffsq = [[] for i in range(n)]
     diffsq = [[] for i in range(t)]
     dist = [[] for i in range(n)]
 
-
     for i in range(n): #compare each set of mean estimates against the truth, sum, and average
         for j in range(t):
             dist[i].append(sqrt((mean_estimate[i][j][0]-truth[j+1][0])**2 + (mean_estimate[i][j][1]-truth[j+1][1])**2))
-            if j == t-1:
-                print("estimate: (", mean_estimate[i][j][0],mean_estimate[i][j][1], ") truth: (", truth[j+1][0],truth[j+1][1],")")
-                print("dist: ", dist[i][j])
-
+            # if j == t-1:
+            #     print("estimate: (", mean_estimate[i][j][0],mean_estimate[i][j][1], ") truth: (", truth[j+1][0],truth[j+1][1],")")
+            #     print("dist: ", dist[i][j])
 
     for j in range(t):
         for i in range(n):
@@ -249,24 +227,9 @@ def PRMSE(truth,mean_estimate):#pass the list of truth positions and
         err_sum = np.sum(diffsq[j])
         RMSE = sqrt(err_sum/n)
         PRMSE.append(RMSE)
-        if j == t-1:
-            print("squared diff: ", diffsq[j])
-            print("summation: ", err_sum)
-            print("RMSE: ", RMSE)
-            print(PRMSE)
     return PRMSE
 
 #---------------------------RESAMPLING METHODS-------------------------------#
-def resample_from_index(N,particles,weights,indexes):
-    assert len(indexes) == N
-
-    particles  = particles[indexes]
-    weights = weights[indexes]
-    weights /= np.sum(weights)
-
-    return weights, particles
-#THIS FUNCTION NEEDS TO BE CONVERTED TO HANDLE THE ROBOT OBJECT
-
 
 def systematic_resample(N,weights,particles):
     p_new = []
@@ -274,29 +237,39 @@ def systematic_resample(N,weights,particles):
     beta = 0.0
     maxw = max(weights)
 
-
     for i in range(N):
         beta += random.random()*2.0*maxw
         #print(index,weights[index],beta)
 
-
         while beta > weights[index]:
             beta -= weights[index]
             index = (index + 1)% N
-
         p_new.append(particles[index])
-        # print("Particle appended: ",particles[index], ", from index: ", index, ", total particles: ", len(p_new))
-
     particles = p_new
 
     return particles
 
-
-#DERIVE THIS BY HAND, FIGURE OUT THE ALGORITHM...
 # Residual systematic
-# def RS_resample(N,weights,particles):
-#     p_new = []
-#     U = np.random.random()/N #Generate a random number between 0 and 1/N
-#
-#     for m in range(N):
-#         index = np.floor((weights[m]-U)*N)
+def RS_resample(N,weights, particles):
+    p_new = []
+    index = [0]*N #Initialize index array
+    U = random.random()/N #Generate a random number between 0 and 1/N
+    i  = 0
+    j = -1
+
+    while j < N-1:
+        j += 1
+        Ns = floor(N*(weights[j]-U))+1
+        counter = 1;
+        while counter <= Ns:
+            index[i] = j
+            i += 1
+            counter += 1
+        U = U + Ns/N - weights[j]
+
+    for i in range(len(index)):
+        p_new.append(particles[index[i]])
+
+    particles = p_new
+    # print("Sampling Index: ",index)
+    return particles
