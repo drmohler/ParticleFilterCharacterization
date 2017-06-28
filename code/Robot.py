@@ -21,35 +21,34 @@ import scipy.stats
 #
 #     else:
 #         break
-world_size = 500.0
-landmarks = [[100.0,400.0], [250.0,100.0], [400.0,400.0]]
 
 class robot:
     def __init__(self):
         self.x = 0 #random.random()*world_size
         self.y = 0 #random.random()*world_size
         self.orientation = 0 #random.random()*2.0*np.pi # relative to x axis
-        self.world_size = world_size
-        self.landmarks = landmarks
-        self.N = 500
+        self.world_size = 100
+        self.landmarks = [[0,0]]
+        self.N = 1
         self.forward_noise = 0.0
         self.turn_noise = 0.0
         self.sense_noise = 0.0
 
     def set_params(self,new_N,new_world_size,new_landmarks):
         self.N = int(new_N)
-        self.world_size = new_world_size
-        self.landmarks
+        self.world_size = int(new_world_size)
+        self.landmarks = new_landmarks
 
     def set(self,new_x,new_y,new_orientation): #place the robot at a given spot
-        if new_x < 0 or new_x >= world_size:
-            print(new_x)
+        if new_x < 0 or new_x >= self.world_size:
+            print("current world size: ", self.world_size)
+            print("Bad X value: ",new_x)
             raise ValueError('X coordinate out of bounds')
-        if new_y < 0 or new_y >= world_size:
-            print(new_y)
+        if new_y < 0 or new_y >= self.world_size:
+            print("Bad Y value: ",new_y)
             raise ValueError('Y coordinate out of bounds')
         if new_orientation < 0 or new_orientation >= 2*np.pi:
-            print(new_orientation)
+            print("Bad hdg value: ",new_orientation)
             raise ValueError('Orientation must be in range [0,2*Pi]')
 
         self.x = float(new_x)
@@ -74,8 +73,8 @@ class robot:
 
         z = []
 
-        for i in range(len(landmarks)):
-            dist = sqrt((self.x - landmarks[i][0]) ** 2 + (self.y - landmarks[i][1]) ** 2)
+        for i in range(len(self.landmarks)):
+            dist = sqrt((self.x - self.landmarks[i][0]) ** 2 + (self.y - self.landmarks[i][1]) ** 2)
             dist += random.gauss(0.0, self.sense_noise) #0 mean noise, user defined standard deviation
             z.append(dist)
 
@@ -107,6 +106,7 @@ class robot:
 
         #set particles
         res = robot()
+        res.set_params(self.N,self.world_size,self.landmarks)
         res.set(x,y,orientation) # changes robot's position to the new location
         res.set_noise(self.forward_noise, self.turn_noise, self.sense_noise)
         return res
@@ -143,8 +143,8 @@ class robot:
     def eval(self,r,p):
         sum = 0.0
         for i in range(len(p)):
-            dx = (p[i].x - r.x + (world_size/2.0)) % world_size - (world_size/2.0)
-            dy = (p[i].y - r.y + (world_size/2.0)) % world_size - (world_size/2.0)
+            dx = (p[i].x - r.x + (self.world_size/2.0)) % self.world_size - (self.world_size/2.0)
+            dy = (p[i].y - r.y + (self.world_size/2.0)) % self.world_size - (self.world_size/2.0)
             err = sqrt(dx*dx+dy*dy)
             sum+= err
         return sum/float(len(p))
