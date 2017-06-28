@@ -12,4 +12,4 @@ A project designed to test the performance of different resampling techniques fo
 
 ## Getting Started
 
-In order to run this project, a new folder must be added to the working directory named 'output'. This folder will be used to store image files containing the results of the most recent test. From the terminal line apply the command 'python PF_Main.py' to run the program and input the deisred experiment parameters. 
+In order to run this project, a new folder must be added to the working directory named 'output'. This folder will be used to store image files containing the results of the most recent test. From the terminal line apply the command 'python PF_top.py' to run the program and input the deisred experiment parameters. 
