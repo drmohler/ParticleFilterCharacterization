@@ -17,119 +17,142 @@ import matplotlib.pyplot as plt
 import matplotlib.animation as animation
 import scipy.stats
 
-world_size = 500.0
-landmarks = [[100.0,400.0], [250.0,100.0], [400.0,400.0]]
+world_size = 100.0
+landmarks = [[20.0,80.0], [50.0,20.0], [80.0,80.0]]
 
 #transport needed visualization parameters to the visualization module
 vis = visualize.vis(world_size,landmarks)
 
-def particle_filter(n,fnoise,tnoise,snoise,steps,trials,methods):
+#attempt at implementation of Particle Flow Particle filter (PFPF)
+def PFPF(n,fnoise,tnoise,snoise,time_steps,trials,methods,graphics):
+
+
+def ParticleFilt(n,fnoise,tnoise,snoise,time_steps,trials,methods,graphics):
 
     """
         n: number of particles
         fnoise: forward noise parameter
         tnoise: turning noise parameter
         snoise: sensing noise parameter
-        steps: completions of pattern of 18 steps (total time steps = 18*steps)
+        time_steps: number of times the robot will move.
         trials: number of times the particle filter will be simulated with
                 current parameters
         methods: list of desired resampling methods for comparison
     """
-    print(methods)
-    #DEBUGGING VARIABLE VALUES
-    # n = 500
-    # fnoise = 0.2
-    # tnoise = 0.2
-    # snoise = 1.0
-    # steps = 12
-    # trials = 3
 
     #--------------------PARTICLE FILTERING OPERATIONS-----------------------------#
+    m_len = len(methods)
+    true_pos=[]
+    p_init = []
+    p = []
+    p_m = []
+    resample_count = [0]*trials
+    resample_percentage = [0]*trials
 
     Bot = Robot.robot()
     Bot.set_params(n,world_size,landmarks) #set robot environment parameters and number
                                            # of particles desired
 
-    state = [250.0,250.0,1.0,0.0]
+    #Robot input parameters, velocity, and heading change
+    U1 =  [0,0,0,0,0,0,0.05,0.05,0.05,0.05,0.05,0,0,0,0,0,0,0]
+    U2 = [15.0,15.0,15.0,15.0,15.0,15.0,0,0,0,0,0,0,0,0,0,0,0,0]
+    state = [70.0,50.0,0.25,0.0]
     #Bot.set_noise(fnoise,tnoise,snoise) #WHY IS THIS BAD NEWS??
     Bot.set(state[0],state[1],state[3]) # Initial position of the robot, will be randomly initialized otherwise
+    true_pos.append([Bot.x,Bot.y])
 
-    true_pos=[]
-    Bot_pos=[Bot.x,Bot.y]
-
-    true_pos.append(Bot_pos)
     z = Bot.sense() #take initial measurement of surroundings
-    p = []
-    for i in range(trials): #generate a particle set for each trial (list of lists)
-        p.append(Robot.create_uniform_particles(n,fnoise,tnoise,snoise,world_size,landmarks))
 
-    mean_estimate = [[]for i in range(trials)]
+    # for i in range(trials): #generate a particle set for each trial (list of lists)
+    p_init = Robot.create_uniform_particles(n,fnoise,tnoise,snoise,world_size,landmarks)
 
-    PRMSE = []
+    # create a list of lists for every trial
+    for i in range(trials):
+        p.append(p_init)
+    # create a copy of the list for each resampling method
+    for m in range(m_len):
+        p_m.append(p)
 
-    for t in range(steps):
-        j=0
-        for j in range(18):
+    mean_estimate = [[[]for i in range(trials)]for m in range(m_len)]
+    # mean_estimate = []
 
-            if(j >= 6 and j <=10 ):
-                state[2] = state[2] + 0.2
-            if(j<6):
-                # hdg = hdg + np.radians(15.0)
-                state[3] = np.radians(15.0)
-            else:
-                state[3] = 0
+    PRMSE = [[]for m in range(m_len)]
+    # PRMSE = []
 
-            #initialize the robot that we would like to track
-            Bot = Bot.move(state[3],state[2])
-            state[0] = Bot.x
-            state[1] = Bot.y
+    p  = p_init
+    # test = input("wait here")
 
-            Bot_pos = [Bot.x,Bot.y]
-            true_pos.append(Bot_pos)
+    #--------------------------------------------------------------------------
+    for t in range(time_steps):
 
-            z = Bot.sense() #take a measurement
+        #update states based on input arrays above (U1 and U2)
+        state[2] = state[2] + U1[t%len(U1)]
+        state[3] = np.radians(U2[t%len(U2)])
 
-            #-----------Loop over particles for multiple simulations------------#
-            for j in range(trials):
+        #move the robot based on the input states
+        Bot = Bot.move(state[3],state[2])
+        state[0] = Bot.x
+        state[1] = Bot.y
+
+        true_pos.append([Bot.x,Bot.y])
+
+        z = Bot.sense() #take a measurement
+        for m in range(m_len):
+            for tr in range(trials):
+
                 p2=[]
                 for i in range(n):
-                     p2.append(p[j][i].move(state[3],state[2])) # move the particles
-                p[j] = p2
+                    #move the particles
+                    p2.append(p_m[m][tr][i].move(state[3],state[2]))
+                p_m[m][tr] = p2
 
                 w = []
-                #generate particle weights based on measurement
+                #generate particle weights based on current measurement
                 for i in range(n):
-                    w.append(p[j][i].measurement_prob(z))
+                    w.append(p_m[m][tr][i].measurement_prob(z))
+                # print("max: ", max(w))
 
                 w_norm = []
                 for i in range(n):
-                    w_norm.append((w[i])/np.sum(w)) # normalize the importance weights
+                    # normalize the importance weights
+                    w_norm.append((w[i])/np.sum(w))
+                shrtWeights = ["%.3f" % elem for elem in w_norm]
 
-                shrtWeights = ["%.3f" % elem for elem in w_norm] # show weight values to 3 decimals
                 neff = int(Robot.neff(w_norm)) #calculate the effective sample size
 
-                # flag = False
+                #if the effective sample size falls below 50% resample
                 if neff < n/2:
-                    # p[j] = Robot.systematic_resample(n,w_norm,p[j])
-                    p[j] = Robot.RS_resample(n,w_norm,p[j])
-                    # flag = True
-                    # print( 'Step =',t,', Evaluation = ', Bot.eval(Bot,p), ', neff = ', neff)
+                    resample_count[tr] +=1
+                    p_m[m][tr] = Robot.resample(n,w_norm,p_m[m][tr],methods[m])
+                    for i in range(n):
+                          w_norm[i] = 1/n
 
                 #returns the mean and variance for each state variable
                 #NOTE: only designed for 3 state variable and is not dynamic presently
-                mu, var = Robot.estimate(w_norm,p[j])
-                mean_estimate[j].append(mu)
-                j += 1
+                mu, var = Robot.estimate(w_norm,p_m[m][tr])
+                mean_estimate[m][tr].append(mu)
+                if graphics:
+                    #arbitrarily select the first trial for graphics
+                    vis.visualize(Bot,t,p2,p_m[0][0],w_norm,mu)
+                for tr in range(trials):
+                    resample_percentage[tr] = 100.0*(resample_count[tr]/time_steps)
+                tr += 1
+    print("Average Resampling Percentage: %", "%0.2f" % np.mean(resample_percentage))
+
                 # Store state est. for all trials
 
-    #Now use the stored mean estimates to calculate the PRMSE of the filter
-    PRMSE = Robot.PRMSE(true_pos,mean_estimate)
+        #----------------------------------------------------------------------#
 
-    #WILL NEED TO ADJUST PLOTS TO DYNAMICALLY PLOT RESULTS FROM EACH DIFFERENT
-    #RESAMPLING METHOD... PRESENTLY THIS ENTIRE BLOCK IS REPEATED FOR EACH METHOD
-    #---------------------------------PLOTS--------------------------------------#
+    #Now use the stored mean estimates to calculate the PRMSE of the filter
+    #for each of the resampling methods used
+
+    for m in range(m_len):
+        PRMSE[m] = Robot.PRMSE(true_pos,mean_estimate[m])
+
+    #---------------------------------PLOTS------------------------------------#
     fig, ax = plt.subplots()
-    plt.plot(PRMSE)
+    for m in range(m_len):
+        plt.plot(PRMSE[m])
     plt.xlabel('Time (s)')
     plt.ylabel('RMSE (m)')
     ax.grid()
@@ -137,19 +160,17 @@ def particle_filter(n,fnoise,tnoise,snoise,steps,trials,methods):
     for line in gridlines:
         line.set_linestyle('--')
     plt.show()
-    # PRMSE.append(Robot.PRMSE(true_pos,mean_estimate))
-    # vis.visualize(Bot,t,p2,p,w_norm,mu)
 
     fig, ax = plt.subplots()
     for x,y in true_pos:
         xt_pos = [i[0] for i in true_pos]
         yt_pos = [i[1] for i in true_pos]
         plt.plot(xt_pos,yt_pos,'-o', color="blue", markeredgecolor="black")
-        for j in range(trials):
-            xe_pos = [i[0] for i in mean_estimate[j]]
-            ye_pos = [i[1] for i in mean_estimate[j]]
-            plt.plot(xe_pos,ye_pos, '-o',markeredgecolor="black")
-
+        for m in range(m_len):
+            for tr in range(trials):
+                xe_pos = [i[0] for i in mean_estimate[m][tr]]
+                ye_pos = [i[1] for i in mean_estimate[m][tr]]
+                plt.plot(xe_pos,ye_pos, '-o',markeredgecolor="black")
 
     plt.xlabel('X (m)')
     plt.ylabel('Y (m)')

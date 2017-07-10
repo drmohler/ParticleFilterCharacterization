@@ -86,8 +86,19 @@ class robot:
         prob = 1.0
         for i in range(len(self.landmarks)):
             dist = sqrt((self.x - self.landmarks[i][0])**2 + (self.y-self.landmarks[i][1])**2)
+            # print("Result of Gaussian: ", self.Gaussian(dist,self.sense_noise,measurement[i]))
             prob *= self.Gaussian(dist,self.sense_noise,measurement[i])
+            # print("landmark: ", self.landmarks[i])
+            # print(prob)
+            # test = input("wait here")
         return prob
+
+    def Gaussian(self,mu,sigma,x):
+        #calculates the probability of x for 1-Dim Gaussian
+        #with mean mu and std dev sigma
+        g = exp(-((mu-x)**2)/(sigma**2)/2.0)/sqrt(2.0*np.pi*(sigma**2))
+        g = max(g, 1.e-50) #avoid pesky NAN issues
+        return g
 
     def move(self,turn,forward):
         if forward < 0:
@@ -110,13 +121,6 @@ class robot:
         res.set(x,y,orientation) # changes robot's position to the new location
         res.set_noise(self.forward_noise, self.turn_noise, self.sense_noise)
         return res
-
-    def Gaussian(self,mu,sigma,x):
-        #calculates the probability of x for 1-Dim Gaussian
-        #with mean mu and variance sigma
-        # gauss = scipy.stats.norm(mu,sigma)
-        # return gauss
-        return exp(-((mu-x)**2)/(sigma**2)/2.0)/sqrt(2.0*np.pi*(sigma **2))
 
     #----------------RESAMPLING METHODS--------------------------#
 
@@ -207,6 +211,7 @@ def PRMSE(truth,mean_estimate):#pass the list of truth positions and
     n = len(mean_estimate) #number of trials ran
     t = len(mean_estimate[0]) #total time steps
 
+
     PRMSE = []
     x_diffsq = [[] for i in range(n)]
     diffsq = [[] for i in range(t)]
@@ -215,9 +220,6 @@ def PRMSE(truth,mean_estimate):#pass the list of truth positions and
     for i in range(n): #compare each set of mean estimates against the truth, sum, and average
         for j in range(t):
             dist[i].append(sqrt((mean_estimate[i][j][0]-truth[j+1][0])**2 + (mean_estimate[i][j][1]-truth[j+1][1])**2))
-            # if j == t-1:
-            #     print("estimate: (", mean_estimate[i][j][0],mean_estimate[i][j][1], ") truth: (", truth[j+1][0],truth[j+1][1],")")
-            #     print("dist: ", dist[i][j])
 
     for j in range(t):
         for i in range(n):
@@ -231,7 +233,31 @@ def PRMSE(truth,mean_estimate):#pass the list of truth positions and
 
 #---------------------------RESAMPLING METHODS-------------------------------#
 
+#Pass a single integer paramter correlating to the KVP in methods
+def resample(N,weights,particles,select):
+    """
+        Function to map a dictionary of available resampling methods
+
+        N: number of particles
+        weights: normalized particle weights
+        particles: list of particles
+        select: key to dict of desired method
+    """
+    p_new = []
+    if select == 1:
+        p_new = systematic_resample(N,weights,particles)
+    elif select == 2:
+        p_new = RS_resample(N,weights,particles)
+    else:
+        print("Not a valid resampling method")
+    # methods = {
+    #             1: systematic_resample(N,weights,particles),
+    #             2: RS_resample(N,weights,particles)
+    # }
+    return p_new
+
 def systematic_resample(N,weights,particles):
+
     p_new = []
     index = int(random.random()*N)
     beta = 0.0
@@ -251,6 +277,7 @@ def systematic_resample(N,weights,particles):
 
 # Residual systematic
 def RS_resample(N,weights, particles):
+
     p_new = []
     index = [0]*N #Initialize index array
     U = random.random()/N #Generate a random number between 0 and 1/N
