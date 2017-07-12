@@ -7,7 +7,7 @@
 
 Markdown is a lightweight and easy-to-use syntax for styling your writing. It includes conventions for
 
-![useful image]({{ site.url }}/images/PFTrack.png)
+![useful image](https://github.com/drmohler/ParticleFilterCharacterization/blob/master/docs/images/PFTrack.png = 250)
 
 Syntax highlighted code block
 ```markdown
