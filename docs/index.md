@@ -1,13 +1,10 @@
- 
-
-
 ## ATRC Summer 2017: Particle Filter Characterization
 
 ### Markdown
 
 Markdown is a lightweight and easy-to-use syntax for styling your writing. It includes conventions for
 
-![Particle Filter2](https://github.com/drmohler/ParticleFilterCharacterization/blob/master/docs/images/PFTrack.png)
+![Particle Filter2](/docs/images/PFTrack.png "Testing 123")
 
 Syntax highlighted code block
 ```markdown
