@@ -7,7 +7,7 @@
 
 Markdown is a lightweight and easy-to-use syntax for styling your writing. It includes conventions for
 
-![ParticleFilter](https://github.com/drmohler/ParticleFilterCharacterization/blob/master/docs/images/PFTrack.png)
+![ParticleFilter](https://github.com/drmohler/ParticleFilterCharacterization/tree/master/docs/images/PFTrack.png)
 
 Syntax highlighted code block
 ```markdown
