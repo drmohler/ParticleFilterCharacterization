@@ -1,4 +1,4 @@
-## ATR Center Summer 2017: Particle Filter Characterization
+## ATRC Summer 2017: Particle Filter Characterization
 
 ### Markdown
 
