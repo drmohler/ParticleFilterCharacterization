@@ -4,7 +4,7 @@
 
 Markdown is a lightweight and easy-to-use syntax for styling your writing. It includes conventions for
 
-![Particle Filter](/docs/images/PFTrack.png)
+![Particle Filter](/docs/images/PFTrack.png){:class="img-responsive"}
 
 Syntax highlighted code block
 ```markdown
