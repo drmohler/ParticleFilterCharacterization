@@ -4,7 +4,7 @@
 
 Markdown is a lightweight and easy-to-use syntax for styling your writing. It includes conventions for
 
-![Particle Filter2](/docs/images/PFTrack.png "Testing 123")
+![Particle Filter](/images/PFTrack.png)
 
 Syntax highlighted code block
 ```markdown
