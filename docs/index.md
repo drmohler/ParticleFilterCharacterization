@@ -5,7 +5,7 @@
 
 Markdown is a lightweight and easy-to-use syntax for styling your writing. It includes conventions for
 
-<img src="\docs\images\PFTrack.png"> 
+![Testing](\docs\images\PFTrack.png)
 
 Syntax highlighted code block
 ```markdown
