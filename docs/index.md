@@ -1,9 +1,6 @@
 ## ATRC 2017: Particle Filter Classification
 
-
-You can use the [editor on GitHub](https://github.com/drmohler/ParticleFilterCharacterization/edit/master/README.md) to maintain and preview the content for your website in Markdown files.
-
-Whenever you commit to this repository, GitHub Pages will run [Jekyll](https://jekyllrb.com/) to rebuild the pages in your site, from the content in your Markdown files.
+This project was developed in support of the AFRL: Automatic Target Recognition Center summer internship, Summer 2017. 
 
 ### Introduction to Particle Filters: 
 
