@@ -4,7 +4,7 @@ This project was developed in support of the AFRL: Automatic Target Recognition 
 
 ### Introduction to Particle Filters: 
 
-blah blah blah
+"Particle" methods, initially introduced in 1993,  are a class of numerical methods which are popular in application to the estimation of problems that are either highly non-linear and non-gaussian in nature. 
 
 
 ![testing](PFTrack.png)
