@@ -1,9 +1,11 @@
 """ Top level file to run multiple particle filters and
     compare the resutlst
 
+Development sponsor: Air Force Research Laboratory ATR Summer Program
 Mentor: Clark Taylor Ph.D.
 Developer: David R. Mohler
-Developed: Summer 2017"""
+Developed: June 2017
+"""
 
 import PF_Main
 import numpy as np
@@ -79,12 +81,12 @@ methods = []
 #         break
 
 #DEBUGGING VARIABLE VALUES
-n = 1000
-fnoise = 0.25
-tnoise = np.radians(5)
-snoise = 0.25
-steps = 126
-trials = 5
+n = 500
+fnoise = 0.1
+tnoise = np.radians(2.5)
+snoise = 1
+steps = 90
+trials = 3
 graphics = False
 methods = [2]
 

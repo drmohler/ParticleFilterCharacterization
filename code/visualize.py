@@ -1,8 +1,10 @@
 """ Particle Filter visualization
 
+Development sponsor: Air Force Research Laboratory ATR Program
 Mentor: Clark Taylor Ph.D.
 Developer: David R. Mohler
-Developed: Summer 2017"""
+Developed: May 2017"""
+
 
 import numpy as np
 from numpy.random import randn, random, uniform
