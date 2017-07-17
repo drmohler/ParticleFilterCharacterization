@@ -1,10 +1,12 @@
-# Particle Filter Classification
-
 ### Introduction to Particle Filters:
 
-"Particle" methods, initially introduced in 1993,  are a class of numerical methods which are popular in application to the estimation of problems that are either highly non-linear or non-gaussian in nature.
+"Particle" methods, initially introduced in 1993,  are a class of numerical
+methods which are popular in application to the estimation of problems that are
+either highly non-linear or non-gaussian in nature. Through a nonparametric implementation of the Bayes filter, the particle filter attempts to approximate the posterior distribution of the state of the system using a finite number of randomly drawn state samples. These samples drawn from the posterior, known as "particles",  each represent a hypothesis as to the true state of the system. 
 
-![Particle Cloud](graphics0_1.png)
+<p align="center">
+  ![Particle Cloud](graphics0_1.png)
+</p>
 
 ## Particle Filtering
 #### Traditional Resampling Methods
