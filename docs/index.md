@@ -15,30 +15,30 @@ either highly non-linear or non-Gaussian in nature. Through a nonparametric impl
   * Move the particles according to the control input and model the uncertainty in the system
     ```python
     def move(self,turn,forward):
-        """
-        turn: variable describing the change in heading (radians)
-        forward: robots present velocity
-        """
-        if forward < 0:
-            raise ValueError('Robot can only move forward')
+          """
+          turn: variable describing the change in heading (radians)
+          forward: robots present velocity
+          """
+          if forward < 0:
+              raise ValueError('Robot can only move forward')
 
-        #turn, and add randomness to the command
-        hdg = self.hdg + float(turn) + random.gauss(0.0,self.turn_noise)
-        hdg %= 2*np.pi
-        dist = float(forward) + random.gauss(0.0,self.forward_noise)
+          #turn, and add randomness to the command
+          hdg = self.hdg + float(turn) + random.gauss(0.0,self.turn_noise)
+          hdg %= 2*np.pi
+          dist = float(forward) + random.gauss(0.0,self.forward_noise)
 
-        #Define x and y motion based upon new bearing relative to the x axis
-        x = self.x + (cos(hdg)*dist)
-        y = self.y + (sin(hdg)*dist)
-        x %= self.world_size #cyclic truncate
-        y %= self.world_size
+          #Define x and y motion based upon new bearing relative to the x axis
+          x = self.x + (cos(hdg)*dist)
+          y = self.y + (sin(hdg)*dist)
+          x %= self.world_size #cyclic truncate
+          y %= self.world_size
 
-        #set particles
-        res = robot()
-        res.set_params(self.N,self.world_size,self.landmarks)
-        res.set(x,y,hdg) # changes particle's position to the new location
-        res.set_noise(self.forward_noise, self.turn_noise, self.sense_noise)
-        return res
+          #set particles
+          res = robot()
+          res.set_params(self.N,self.world_size,self.landmarks)
+          res.set(x,y,hdg) # changes particle's position to the new location
+          res.set_noise(self.forward_noise, self.turn_noise, self.sense_noise)
+          return res
     ```
 2. **Update**
   * Adjust the weights of the particles based on measurements received from the robot (which are also uncertain) Those particles that more closely match the
@@ -57,13 +57,14 @@ either highly non-linear or non-Gaussian in nature. Through a nonparametric impl
 
       return prob
       ```
+
 3. **Resample if Necessary**
   * Calculate the number of particles that are holding an effective weight, if that number falls below some threshold (common practice dictates n_eff <= 50%), resample the particles.
 
     ```python
     #Function to calculate the effective sample size
     def neff(weights):
-    return 1./np.sum(np.square(weights))
+      return 1./np.sum(np.square(weights))
     ```
   * Remove particles that are highly improbable and replace them with more probable particles that are drawn proportionally to their weight and dispersed by noise. (Residual Systematic Resampling is shown below)
 
