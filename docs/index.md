@@ -66,7 +66,7 @@ either highly non-linear or non-Gaussian in nature. Through a nonparametric impl
       return 1./np.sum(np.square(weights))
     ```
 
-  * Remove particles that are highly improbable and replace them with more probable particles that are drawn proportionally to their weight and dispersed by noise. (Residual Systematic Resampling is shown below)
+    * Remove particles that are highly improbable and replace them with more probable particles that are drawn proportionally to their weight and dispersed by noise. (Residual Systematic Resampling is shown below)
 
     ```python
     def RS_resample(N,weights, particles):
@@ -92,7 +92,7 @@ either highly non-linear or non-Gaussian in nature. Through a nonparametric impl
 
       return particles
     ```  
-    
+
 4. **Estimate the State**
   * Compute the mean and covariance of the particle set to estimate the state of the system.
 
