@@ -66,6 +66,7 @@ either highly non-linear or non-Gaussian in nature. Through a nonparametric impl
     def neff(weights):
       return 1./np.sum(np.square(weights))
     ```
+    
   * Remove particles that are highly improbable and replace them with more probable particles that are drawn proportionally to their weight and dispersed by noise. (Residual Systematic Resampling is shown below)
 
     ```python
@@ -97,7 +98,7 @@ either highly non-linear or non-Gaussian in nature. Through a nonparametric impl
 
     ```python
     def estimate(weights,particles):
-      """ returns mean and variance """
+      """ returns mean and covariance """
       pos_inter=[]
 
       for p in range(len(particles)):
@@ -105,7 +106,7 @@ either highly non-linear or non-Gaussian in nature. Through a nonparametric impl
       pos = np.asarray(pos_inter)
 
       #calculate the mean estimate of the state
-      mu = np.average(pos_inter, weights=weights, axis=0) # should contain x,y, and heading
+      mu = np.average(pos_inter, weights=weights, axis=0)
       cov = np.cov(pos,rowvar=False)
 
       return mu, cov
