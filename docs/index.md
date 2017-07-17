@@ -25,20 +25,20 @@ either highly non-linear or non-Gaussian in nature. Through a nonparametric impl
           raise ValueError('Robot can only move forward')
 
       #turn, and add randomness to the command
-      orientation = self.orientation + float(turn) + random.gauss(0.0,self.turn_noise)
-      orientation %= 2*np.pi
+      hdg = self.hdg + float(turn) + random.gauss(0.0,self.turn_noise)
+      hdg %= 2*np.pi
       dist = float(forward) + random.gauss(0.0,self.forward_noise)
 
       #Define x and y motion based upon new bearing relative to the x axis
-      x = self.x + (cos(orientation)*dist)
-      y = self.y + (sin(orientation)*dist)
+      x = self.x + (cos(hdg)*dist)
+      y = self.y + (sin(hdg)*dist)
       x %= self.world_size #cyclic truncate
       y %= self.world_size
 
       #set particles
       res = robot()
       res.set_params(self.N,self.world_size,self.landmarks)
-      res.set(x,y,orientation) # changes particle's position to the new location
+      res.set(x,y,hdg) # changes particle's position to the new location
       res.set_noise(self.forward_noise, self.turn_noise, self.sense_noise)
       return res
   ```
