@@ -14,58 +14,56 @@ either highly non-linear or non-Gaussian in nature. Through a nonparametric impl
 1. **Propagate particles**
   * Move the particles according to the control input and model the uncertainty in the system
 
-  ```python
-  def move(self,turn,forward):
-      """
-      turn: variable describing the change in heading (radians)
-      forward: robots present velocity
-      """
-      if forward < 0:
-          raise ValueError('Robot can only move forward')
+    ```python
+    def move(self,turn,forward):
+        """
+        turn: variable describing the change in heading (radians)
+        forward: robots present velocity
+        """
+        if forward < 0:
+            raise ValueError('Robot can only move forward')
 
-      #turn, and add randomness to the command
-      hdg = self.hdg + float(turn) + random.gauss(0.0,self.turn_noise)
-      hdg %= 2*np.pi
-      dist = float(forward) + random.gauss(0.0,self.forward_noise)
+        #turn, and add randomness to the command
+        hdg = self.hdg + float(turn) + random.gauss(0.0,self.turn_noise)
+        hdg %= 2*np.pi
+        dist = float(forward) + random.gauss(0.0,self.forward_noise)
 
-      #Define x and y motion based upon new bearing relative to the x axis
-      x = self.x + (cos(hdg)*dist)
-      y = self.y + (sin(hdg)*dist)
-      x %= self.world_size #cyclic truncate
-      y %= self.world_size
+        #Define x and y motion based upon new bearing relative to the x axis
+        x = self.x + (cos(hdg)*dist)
+        y = self.y + (sin(hdg)*dist)
+        x %= self.world_size #cyclic truncate
+        y %= self.world_size
 
-      #set particles
-      res = robot()
-      res.set_params(self.N,self.world_size,self.landmarks)
-      res.set(x,y,hdg) # changes particle's position to the new location
-      res.set_noise(self.forward_noise, self.turn_noise, self.sense_noise)
-      return res
-  ```
+        #set particles
+        res = robot()
+        res.set_params(self.N,self.world_size,self.landmarks)
+        res.set(x,y,hdg) # changes particle's position to the new location
+        res.set_noise(self.forward_noise, self.turn_noise, self.sense_noise)
+        return res
+    ```
 2. **Update**
-  * adjust the weights of the particles based on measurements received from the robot (which are also uncertain) Those particles that more closely match the
+  * Adjust the weights of the particles based on measurements received from the robot (which are also uncertain) Those particles that more closely match the
   measurement are weighted higher than those that are do not match the received measurements as well.
+    ```python
+    def measurement_prob(self, measurement):
+      """
+      Apply weighting to particles based on recieved measurement
+      """
+      prob = 1.0
+      for i in range(len(self.landmarks)):
+          dist = sqrt((self.x - self.landmarks[i][0])**2 +  
+                      (self.y-self.landmarks[i][1])**2)
+          prob *= self.Gaussian(dist,self.sense_noise,measurement[i])
 
-  ```python
-  def measurement_prob(self, measurement):
-    """
-    Apply weighting to particles based on recieved measurement
-    """
-    prob = 1.0
-    for i in range(len(self.landmarks)):
-        dist = sqrt((self.x - self.landmarks[i][0])**2 +  
-                    (self.y-self.landmarks[i][1])**2)
-        prob *= self.Gaussian(dist,self.sense_noise,measurement[i])
-
-    return prob
+      return prob
   ```
 3. **Resample if Necessary**
   * Calculate the number of particles that are holding an effective weight, if that number falls below some threshold (common practice dictates n_eff <= 50%), resample the particles.
-```python
-#Function to calculate the effective sample size
-def neff(weights):
-return 1./np.sum(np.square(weights))
-```
-
+  ```python
+  #Function to calculate the effective sample size
+  def neff(weights):
+  return 1./np.sum(np.square(weights))
+  ```
   * Remove particles that are highly improbable and replace them with more probable particles that are drawn proportionally to their weight and dispersed by noise. (Residual Systematic Resampling is shown below)
 
     ```python
@@ -92,7 +90,23 @@ return 1./np.sum(np.square(weights))
 
       return particles
     ```
+4. **Estimate the State**
+  * Compute the mean and covariance of the particle set to estimate the state of the system.
+  ```python
+  def estimate(weights,particles):
+    """ returns mean and variance """
+    pos_inter=[]
 
+    for p in range(len(particles)):
+        pos_inter.append([particles[p].x,particles[p].y,particles[p].hdg])
+    pos = np.asarray(pos_inter)
+
+    #calculate the mean estimate of the state
+    mu = np.average(pos_inter, weights=weights, axis=0) # should contain x,y, and heading
+    cov = np.cov(pos,rowvar=False)
+
+    return mu, cov
+  ```
 
 
 
