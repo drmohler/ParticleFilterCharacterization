@@ -1,11 +1,9 @@
 """ Top level file to run multiple particle filters and
     compare the resutlst
 
-Development sponsor: Air Force Research Laboratory ATR Summer Program
 Mentor: Clark Taylor Ph.D.
 Developer: David R. Mohler
-Developed: June 2017
-"""
+Developed: Summer 2017"""
 
 import PF_Main
 import numpy as np

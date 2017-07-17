@@ -1,10 +1,9 @@
 """File developed to implement a given particle with parameters as
    passed from PF_top.py
 
-Development sponsor: Air Force Research Laboratory ATR Program
 Mentor: Clark Taylor Ph.D.
 Developer: David R. Mohler
-Developed: May 2017"""
+Developed: Summer 2017"""
 
 import Robot
 import visualize
