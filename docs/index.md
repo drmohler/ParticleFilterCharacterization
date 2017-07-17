@@ -54,7 +54,6 @@ either highly non-linear or non-Gaussian in nature. Through a nonparametric impl
           dist = sqrt((self.x - self.landmarks[i][0])**2 +  
                       (self.y-self.landmarks[i][1])**2)
           prob *= self.Gaussian(dist,self.sense_noise,measurement[i])
-
       return prob
       ```
 
@@ -66,7 +65,7 @@ either highly non-linear or non-Gaussian in nature. Through a nonparametric impl
     def neff(weights):
       return 1./np.sum(np.square(weights))
     ```
-    
+
   * Remove particles that are highly improbable and replace them with more probable particles that are drawn proportionally to their weight and dispersed by noise. (Residual Systematic Resampling is shown below)
 
     ```python
@@ -93,6 +92,7 @@ either highly non-linear or non-Gaussian in nature. Through a nonparametric impl
 
       return particles
     ```
+    
 4. **Estimate the State**
   * Compute the mean and covariance of the particle set to estimate the state of the system.
 
