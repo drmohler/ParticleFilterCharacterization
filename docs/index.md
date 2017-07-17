@@ -42,7 +42,59 @@ either highly non-linear or non-Gaussian in nature. Through a nonparametric impl
       return res
   ```
 2. **Update**
-  * asdf
+  * adjust the weights of the particles based on measurements received from the robot (which are also uncertain) Those particles that more closely match the
+  measurement are weighted higher than those that are do not match the received measurements as well.
+
+  ```python
+  def measurement_prob(self, measurement):
+    """
+    Apply weighting to particles based on recieved measurement
+    """
+    prob = 1.0
+    for i in range(len(self.landmarks)):
+        dist = sqrt((self.x - self.landmarks[i][0])**2 +  
+                    (self.y-self.landmarks[i][1])**2)
+        prob *= self.Gaussian(dist,self.sense_noise,measurement[i])
+
+    return prob
+  ```
+3. **Resample if Necessary**
+  * Calculate the number of particles that are holding an effective weight, if that number falls below some threshold (common practice dictates n_eff <= 50%), resample the particles.
+```python
+#Function to calculate the effective sample size
+def neff(weights):
+return 1./np.sum(np.square(weights))
+```
+
+  * Remove particles that are highly improbable and replace them with more probable particles that are drawn proportionally to their weight and dispersed by noise. (Residual Systematic Resampling is shown below)
+
+    ```python
+    def RS_resample(N,weights, particles):
+      p_new = []
+      index = [0]*N #Initialize index array
+      U = random.random()/N #Generate a random number between 0 and 1/N
+      i  = 0
+      j = -1
+
+      while j < N-1:
+          j += 1
+          Ns = floor(N*(weights[j]-U))+1
+          counter = 1;
+          while counter <= Ns:
+              index[i] = j
+              i += 1
+              counter += 1
+          U = U + Ns/N - weights[j]
+
+      for i in range(len(index)):
+          p_new.append(particles[index[i]])
+      particles = p_new
+
+      return particles
+    ```
+
+
+
 
 
  As can be seen in the figure, the present set of particles offer a poor representation of the actual state of the system.
