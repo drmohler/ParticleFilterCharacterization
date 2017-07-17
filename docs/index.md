@@ -91,7 +91,7 @@ either highly non-linear or non-Gaussian in nature. Through a nonparametric impl
       particles = p_new
 
       return particles
-    ```
+    ```  
     
 4. **Estimate the State**
   * Compute the mean and covariance of the particle set to estimate the state of the system.
