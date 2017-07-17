@@ -9,11 +9,12 @@ either highly non-linear or non-Gaussian in nature. Through a nonparametric impl
 ## Particle Filtering
  This project explores two methods for the estimation of the state with particle methods developed in python. The first being the traditional style of particle filtering which incorporates importance resampling methods, and the second, applying log homotopy particle flow filtering methods as proposed by Duam and Huang ("Nonlinear filters with log-homotopy", 2007)
 
- #### Generic Algorithm for Traditional Resampling Particle Filters
+ ### Generic Algorithm for Traditional Resampling Particle Filters
 
 
 1. Propagate particles
-  * Move the particles according to the control input and model the uncertainty in the system 
+  * Move the particles according to the control input and model the uncertainty in the system
+
   ```python
   def move(self,turn,forward):
       """
