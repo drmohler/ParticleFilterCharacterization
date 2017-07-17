@@ -1,6 +1,6 @@
 ### Introduction to Particle Filters:
 
-"Particle" methods, initially introduced in 1993,  are a class of numerical
+&nbsp;&nbsp;&nbsp;&nbsp;"Particle" methods, initially introduced in 1993,  are a class of numerical
 methods which are popular in application to the estimation of problems that are
 either highly non-linear or non-Gaussian in nature. Through a nonparametric implementation of the Bayes filter, the particle filter attempts to approximate the posterior distribution of the state of the system using a finite number of randomly drawn state samples. These samples drawn from the posterior, known as "particles",  each represent a hypothesis as to the true state of the system. Each particle is weighted proportionally to the probability that it represents the true state according to some proposal distribution. The combination of the particles and their weights form the estimated probability distribution. An example particle cloud at initialization is shown in the figure below. The particles carrying an "effective" probability weight are highlighted in green, with the true state in blue, and the estimated state marked in black.
 
