@@ -116,4 +116,6 @@
  As can be seen in the figure, the present set of particles offer a poor representation of the actual state of the system.
 
 
-![GIF](ParticleFilterTracking.gif)
+ <p align="center">
+   <img src="PF_track.gif">
+ </p>
