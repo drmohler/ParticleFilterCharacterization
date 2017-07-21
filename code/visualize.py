@@ -45,8 +45,8 @@ class vis:
             circle = plt.Circle((p[ind].x,p[ind].y),1., facecolor='#ffb266', edgecolor='#994c00', alpha=0.5)
             plt.gca().add_patch(circle)
 
-            #particles orientation
-            arrow = plt.Arrow(p[ind].x,p[ind].y,2*cos(p[ind].orientation),2*sin(p[ind].orientation),
+            #particles hdg
+            arrow = plt.Arrow(p[ind].x,p[ind].y,2*cos(p[ind].hdg),2*sin(p[ind].hdg),
                                 alpha=1., facecolor='#994c00', edgecolor='#994c00')
             plt.gca().add_patch(arrow)
 
@@ -56,8 +56,8 @@ class vis:
             circle = plt.Circle((pr[ind].x, pr[ind].y), 1., facecolor='#66ff66', edgecolor='#009900', alpha=0.5)
             plt.gca().add_patch(circle)
 
-            # particle's orientation
-            arrow = plt.Arrow(pr[ind].x, pr[ind].y, 2*cos(pr[ind].orientation), 2*sin(pr[ind].orientation),
+            # particle's hdg
+            arrow = plt.Arrow(pr[ind].x, pr[ind].y, 2*cos(pr[ind].hdg), 2*sin(pr[ind].hdg),
                                 alpha=1., facecolor='#006600', edgecolor='#006600')
             plt.gca().add_patch(arrow)
 
@@ -70,14 +70,14 @@ class vis:
         circle = plt.Circle((robot.x, robot.y), 1., facecolor='#6666ff', edgecolor='#0000cc')
         plt.gca().add_patch(circle)
 
-        # robot's orientation
-        arrow = plt.Arrow(robot.x, robot.y, 2*cos(robot.orientation), 2*sin(robot.orientation), alpha=0.5, facecolor='#000000', edgecolor='#000000')
+        # robot's hdg
+        arrow = plt.Arrow(robot.x, robot.y, 2*cos(robot.hdg), 2*sin(robot.hdg), alpha=0.5, facecolor='#000000', edgecolor='#000000')
         plt.gca().add_patch(arrow)
 
         #State Estimate (unimodal), will need modification for multi-modal
         circle = plt.Circle((estimate[0], estimate[1]), 1., facecolor='#505050', edgecolor='#000000')
         plt.gca().add_patch(circle)
-        arrow = plt.Arrow(estimate[0],estimate[1], 2*cos(estimate[2]), 2*sin(estimate[2]), alpha=0.5, facecolor='#000000', edgecolor='#000000')
+        arrow = plt.Arrow(estimate[0],estimate[1], 2*cos(estimate[3]), 2*sin(estimate[3]), alpha=0.5, facecolor='#000000', edgecolor='#000000')
         plt.gca().add_patch(arrow)
 
 

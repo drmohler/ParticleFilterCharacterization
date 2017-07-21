@@ -27,7 +27,6 @@ methods = []
 #     for i in resample_methods.keys():
 #         methods.append(i)
 #
-#
 # if method != "" and method !='all':
 #     if int(method) in resample_methods and method != 'all':
 #         methods.append(int(method))
@@ -44,8 +43,6 @@ methods = []
 #             print("Resampling method not available.")
 #             print()
 #     # if all()
-
-
 
 # while True:
 #     try:
@@ -85,15 +82,12 @@ n = 500
 fnoise = 0.1
 tnoise = np.radians(2.5)
 snoise = 1
-steps = 90
+steps = 100
 trials = 3
 graphics = False
 methods = [2]
 
 
-#MODIFY MAIN TO TAKE IN ALL PARAMETERS USED ABOVE, AS WELL AS TO SAVE ALL TRIALS
-#PROBABLY WANT THIS SUCH THAT IT RUNS ON THE SAME DATA FOR ALL METHODS...
-#REALLY BAD NEWS FOR COMPUTE TIME...
-
 #run the particle filter for each of the chosen resampling methods
 PF_Main.ParticleFilt(n,fnoise,tnoise,snoise,steps,trials,methods,graphics)
+# PF_Main.PFPF(n,fnoise,tnoise,snoise,steps,methods,graphics)
