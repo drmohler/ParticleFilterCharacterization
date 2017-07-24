@@ -283,6 +283,7 @@ def RS_resample(N,weights, particles):
     return particles
 
 def ParticleState(particle):
+    """Return the current particle state as numpy array"""
     px,py,pvel,phdg = particle.x,particle.y,particle.vel,particle.hdg
     pState = np.asarray([px,py,pvel,phdg])
     return pState
@@ -302,7 +303,24 @@ def GenerateLambda():
 
     return lambda_intervals
 
-def caculate_flow_params(est,P,H,R,z,lam):
+def h_jacobian(est, landmarks):
+    #Return the jacobian of the measurement matrix as a numpy arrray
+    H = []
+    for i in range(len(landmarks)):
+        x_dif = est[0]-landmarks[i][0]
+        y_dif = est[1]-landmarks[i][1]
+        x_lin = x_dif/np.sqrt(x_dif**2+y_dif**2)
+        y_lin = y_dif/np.sqrt(x_dif**2+y_dif**2)
+        h_inter = [x_lin,y_lin,0,0]
+        H.append(h_inter)
+    H = np.asarray(H)
+    return H
+
+def dot4(A,B,C,D):
+    """ Returns the matrix multiplication of A*B*C*D"""
+    return dot(A, dot(B, dot(C,D)))
+
+def caculate_flow_params(est,P,H,R,z,pmeasure,lam):
     """
     Calculate the values for A and b for the given particle
 
@@ -320,24 +338,27 @@ def caculate_flow_params(est,P,H,R,z,lam):
     A: Flow parameter
     b: Flow parameter
     """
-    A = -0.5*dot3(dot(P,H.T),inv(lam*dot3(H,P,H.T)+R),H)
-    b = dot((eye(4)+(2*lam*A)),dot3((eye(4)+(lam*A)),dot3(P,H.T,inv(R)),z)+dot(A,est))
+    HPHt = dot3(H,P,H.T)
+    A_inv = inv((lam*HPHt) + R)
+
+    A = (-0.5)*dot4(P,H.T,A_inv,H)
+
+    I2 = eye(4)+(2*lam*A)
+    I1 = eye(4)+(lam*A)
+    Ri = inv(R)
+
+    IlamAHPHt = dot4(I1,P,H.T,Ri)
+    err = pmeasure - dot(H,est)
+    zdif = z - err
+    b5 = dot(IlamAHPHt,zdif)
+    Ax = dot(A,est)
+
+    in_sum = b5 + Ax
+    b = dot(I2,in_sum)
+    # print("A:\n",A,"\n")
+    # print("b:\n",b,"\n")
+    # input("flow parameters")
+
+    # A = -0.5*dot3(dot(P,H.T),inv(lam*dot3(H,P,H.T)+R),H)
+    # b = dot((eye(4)+(2*lam*A)),dot3((eye(4)+(lam*A)),dot3(P,H.T,inv(R)),z)+dot(A,est))
     return A,b
-
-def h_jacobian(est, landmarks):
-    #Return the jacobian of the measurement matrix as a numpy arrray
-
-    H = []
-
-    for i in range(len(landmarks)):
-        x_dif = est[0]-landmarks[i][0]
-        y_dif = est[1]-landmarks[i][1]
-        x_lin = x_dif/np.sqrt(x_dif**2+y_dif**2)
-        y_lin = y_dif/np.sqrt(x_dif**2+y_dif**2)
-        h_inter = [x_lin,y_lin,0,0]
-        H.append(h_inter)
-    H = np.asarray(H)
-    print(H)
-    input("observe jacobian")
-
-    return H

@@ -67,8 +67,10 @@ def PFPF(n,fnoise,tnoise,snoise,time_steps,methods,graphics):
 
     z = Bot.sense(state) #take initial measurement of surroundings
 
-    p_init = Robot.create_uniform_particles(n,fnoise,tnoise,snoise,state[2],
-                                            world_size,landmarks)
+    # p_init = Robot.create_uniform_particles(n,fnoise,tnoise,snoise,state[2],
+                                            # world_size,landmarks)
+    p_init = Robot.create_gaussian_particles(Bot,n,fnoise,tnoise,snoise,10.,
+                                             world_size,landmarks)
 
     mean_estimate = []
     PRMSE = []
@@ -79,10 +81,14 @@ def PFPF(n,fnoise,tnoise,snoise,time_steps,methods,graphics):
 
     #generate initial state estimate and covariance matrix
     xbar , covar = Robot.estimate(w,p)
+    print("xbar:\n",xbar)
+    print("covar:\n",covar)
+    input("initial estimates")
+
 
     #-----------------------------set up EKF-----------------------------------#
     # dt = 1# 0.05
-    R = np.diag([snoise]*len(landmarks))
+    R = np.diag([snoise]*len(landmarks)) #need for flow parameter calculations
     # Q = np.diag([0,0,fnoise**2,tnoise**2])
     # F = np.array([[1,0,np.cos(state[3]),-state[2]*np.sin(state[3])],
     #                          [0,1,np.sin(state[3]),state[2]*np.cos(state[3])],
@@ -98,6 +104,7 @@ def PFPF(n,fnoise,tnoise,snoise,time_steps,methods,graphics):
 
     #Generate pseudo time intervals
     lam_vec = Robot.GenerateLambda()
+    tt = 0
     #--------------------------------------------------------------------------#
     for t in range(time_steps):
         #update states based on input arrays above (U1 and U2)
@@ -129,30 +136,40 @@ def PFPF(n,fnoise,tnoise,snoise,time_steps,methods,graphics):
             # normalize the importance weights
             w_norm.append((w[i])/np.sum(w))
 
-        #only need mean estimate, ignore new covariance
-        xbar, covar = Robot.estimate(w,p)
+        xbar, covar = Robot.estimate(w_norm,p)
+        if graphics and t==0:
+            #arbitrarily select the first trial for graphics
+            vis.visualize(Bot,t,p2,p,w_norm,xbar)
+        print("t: ", t)
         print("xbar:\n",xbar)
+        print("covar:\n",covar)
         lam = 0
 
         for j in range(nLambda):
             lam += lam_vec[j] #pseudo time step
             for i in range(len(p)):
                 pState = Robot.ParticleState(p[i])
-                print("Particle",i,":\n",p[i])
+                pmeasure = p[i].sense(pState)
                 #calculate H mat for each particle
                 H = Robot.h_jacobian(pState,landmarks)
-                print("current state:\n",state)
-                A,b = Robot.caculate_flow_params(xbar,covar,H,R,z,lam)
+                A,b = Robot.caculate_flow_params(xbar,covar,H,R,z,pmeasure,lam)
                 dxdl = dot(A,pState) + b
-                print(dxdl)
-                print(lam_vec[j]*dxdl)
-                print(pState)
                 pState += (lam_vec[j]*dxdl)
-                print("True state:\n",Bot)
-                print("particle before migrate:\n",p[i])
+                pState[3] %= 2*np.pi #wrap heading value around
+
+                # print("-----------------------------------")
+                # print("time step:",t)
+                # print("pseudo time step: ", j)
+                # print("Truth:\n",Bot)
+                # print("Particle",i,":\n",p[i])
+                # print("dxdl:\n",dxdl)
+                # print("migrate value:\n",lam_vec[j]*dxdl)
+                #
+                # print("migrated particle:\n",pState)
+                # print("-----------------------------------")
+                # # input("observe ")
+
                 p[i].set(pState[0],pState[1],pState[2],pState[3])
-                print("particle after migrate:\n",p[i])
-                input("observe migration")
 
             for i in range(n):
                 w[i] = p[i].measurement_prob(z)
@@ -161,8 +178,14 @@ def PFPF(n,fnoise,tnoise,snoise,time_steps,methods,graphics):
                 # normalize the importance weights
                 w_norm.append((w[i])/np.sum(w))
             #only need mean estimate, ignore new covariance
-            xbar, _ = Robot.estimate(w,p)
-            print("new xbar:\n",xbar,Xbar)
+            xbar, covar = Robot.estimate(w,p)
+        if graphics:
+            #arbitrarily select the first trial for graphics
+            vis.visualize(Bot,t+1,p2,p,w_norm,xbar)
+
+
+        # print("new xbar:\n",xbar)
+        # input("look at new est after flow")
 
 #--------------------------------------------------------------------------#
 #--------------------------------------------------------------------------#

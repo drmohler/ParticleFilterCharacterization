@@ -78,16 +78,16 @@ methods = []
 #         break
 
 #DEBUGGING VARIABLE VALUES
-n = 500
+n = 250
 fnoise = 0.1
 tnoise = np.radians(2.5)
 snoise = 1
-steps = 100
+steps = 150
 trials = 3
-graphics = False
+graphics = True
 methods = [2]
 
 
 #run the particle filter for each of the chosen resampling methods
-PF_Main.ParticleFilt(n,fnoise,tnoise,snoise,steps,trials,methods,graphics)
-# PF_Main.PFPF(n,fnoise,tnoise,snoise,steps,methods,graphics)
+# PF_Main.ParticleFilt(n,fnoise,tnoise,snoise,steps,trials,methods,graphics)
+PF_Main.PFPF(n,fnoise,tnoise,snoise,steps,methods,graphics)
