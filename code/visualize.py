@@ -85,3 +85,80 @@ class vis:
 
         plt.close()
     #-----------------------------------------------------------------------------#
+
+def plot_paths(true_pos,mean_estimate):
+    """
+    Params:
+    -----------------
+    true_pos: true position of the robot
+    mean_estimate: list of mean estimate coordinates from PF and PFPF
+    """
+    fig, ax = plt.subplots()
+    flag = True
+    flag2 = True
+    flag3 = True
+    count = 0
+    trials = len(mean_estimate[0])
+
+    for x,y in true_pos:
+        xt_pos = [i[0] for i in true_pos]
+        yt_pos = [i[1] for i in true_pos]
+
+        if flag:
+            label = "Truth"
+            flag = False
+        else:
+            label = None
+
+        plt.plot(xt_pos,yt_pos,'-o', color="blue", markeredgecolor="blue", label=label)
+
+        for tr in range(trials):
+            if flag2:
+                count += 1
+                trial_label =  "Flow Trial - " + str(tr+1)
+                trial_label_std = "Std. Trial - " + str(tr+1)
+                if count == trials:
+                    flag2 = False
+            else:
+                trial_label = None
+                trial_label_std = None
+            xe_pos_flow = [i[0] for i in mean_estimate[0][tr]]
+            ye_pos_flow = [i[1] for i in mean_estimate[0][tr]]
+            plt.plot(xe_pos_flow,ye_pos_flow,'-x' , label=trial_label)
+
+            xe_pos_std = [i[0] for i in mean_estimate[1][tr]]
+            ye_pos_std = [i[1] for i in mean_estimate[1][tr]]
+            plt.plot(xe_pos_std,ye_pos_std,'-^' , label=trial_label_std)
+
+    plt.legend()
+    plt.xlabel('X (m)')
+    plt.ylabel('Y (m)')
+    ax.grid()
+    gridlines = ax.get_xgridlines() + ax.get_ygridlines()
+    for line in gridlines:
+        line.set_linestyle('--')
+    plt.savefig("path.png")
+
+def plot_RMSE(RMSE):
+    """
+    Params:
+    -----------------
+    RMSE: List of lists containing PRMSE measurements from various
+          Particle filter methods
+    """
+    fig, ax = plt.subplots()
+    for m in range(len(RMSE)):
+        if m == 0:
+            method = "Flow"
+        else:
+            method = "Std."
+        plt.plot(RMSE[m],label=method)
+    plt.legend()
+    plt.xlabel('Time (s)')
+    plt.ylabel('RMSE (m)')
+    plt.title("RMSE vs Time")
+    ax.grid()
+    gridlines = ax.get_xgridlines() + ax.get_ygridlines()
+    for line in gridlines:
+        line.set_linestyle('--')
+    plt.savefig("RMSE.png")

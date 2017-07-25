@@ -14,6 +14,8 @@ import random
 import matplotlib.pyplot as plt
 import scipy.stats
 
+from cmath import rect, phase
+
 class robot:
     def __init__(self):
         self.x = 0
@@ -175,6 +177,40 @@ def create_gaussian_particles(bot,N,fnoise,tnoise,snoise,std_dev,world_size,land
 def neff(weights):
         return 1. / np.sum(np.square(weights))
 
+def mean_angle(rad):
+    mean = phase(sum(rect(1, d) for d in rad)/len(rad))
+    #ensure positive mean angle measure
+    while mean < 0:
+        mean += 2*np.pi
+    mean %= 2*np.pi
+    return mean
+
+def covariance(particles,mu):
+    """
+    params:
+    ------------
+    particles: list of particles
+    mu: current mean estimate of the state
+
+    returns:
+    P: covariance matrix
+    """
+    N = len(particles)
+    mat_sum = np.zeros((4,4))
+    for p in range(N):
+        v = ParticleState(particles[p])
+        v_shift = np.asarray(v-mu)
+        if v_shift[3] > np.pi:
+            v_shift[3] -= 2*(np.pi)
+        if v_shift[3] < -np.pi:
+            v_shift[3] += 2*(np.pi)
+        v_shiftT = np.transpose(v_shift)
+        mult = np.outer(v_shift,v_shiftT)
+        mat_mults = np.asmatrix(mult)
+        mat_sum += mat_mults
+    cov = (1/(N-1))*mat_sum
+    return cov
+
 #function to estimate the state, not appropriate for multi-modal
 def estimate(weights,particles):
         """ returns mean and variance """
@@ -187,7 +223,10 @@ def estimate(weights,particles):
 
         #calculate the mean estimate of the state
         mu = np.average(state, weights=weights, axis=0) # should contain x,y, and heading
-        cov = np.cov(state,rowvar=False)
+        mu[3] = mean_angle(state[3])
+
+        cov = covariance(particles,mu)
+        # cov = np.cov(state,rowvar=False)
 
         return mu, cov
 

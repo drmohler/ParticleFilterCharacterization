@@ -9,6 +9,9 @@ Developed: June 2017
 
 import PF_Main
 import numpy as np
+import visualize
+
+
 
 #------------------------------USER INPUTS-------------------------------#
 resample_methods = {1:"Systematic resample", 2:"Residual systematic resample"}
@@ -78,16 +81,23 @@ methods = []
 #         break
 
 #DEBUGGING VARIABLE VALUES
-n = 250
+n = 500
 fnoise = 0.1
 tnoise = np.radians(2.5)
 snoise = 1
 steps = 150
-trials = 3
-graphics = True
+trials = 10
+graphics = False
 methods = [2]
 
-
 #run the particle filter for each of the chosen resampling methods
-# PF_Main.ParticleFilt(n,fnoise,tnoise,snoise,steps,trials,methods,graphics)
-PF_Main.PFPF(n,fnoise,tnoise,snoise,steps,methods,graphics)
+# est,true,RMSE = PF_Main.ParticleFilt(n,fnoise,tnoise,snoise,steps,trials,methods,graphics)
+# est2,true2,RMSE2 = PF_Main.ParticleFilt(n,fnoise,tnoise,snoise,steps,trials,methods,graphics)
+
+# PRMSE = [RMSE,RMSE2]
+
+
+# PF_Main.PFPF(n,fnoise,tnoise,snoise,steps,trials,methods,graphics)
+est,truth,PRMSE = PF_Main.two_filters(n,fnoise,tnoise,snoise,steps,trials,methods,graphics)
+visualize.plot_RMSE(PRMSE)
+visualize.plot_paths(truth,est)

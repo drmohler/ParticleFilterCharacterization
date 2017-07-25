@@ -116,3 +116,12 @@
  </p>
 
  ## Particle Flow Filtering
+
+ In this project we have developed an implementation of the Exact Flow Filter as derived by Duam and Huang. It is to be noted that in this implementation we have foregone the use of Kalman filter prediction and updates, electing to instead apply statistics gathered from the particle distribution for the calculation of state estimates and covariance matrices. 
+
+ <p align="center">
+   <img src="PFPF_1.png">
+ </p>
+
+
+ ## Filter Comparison
