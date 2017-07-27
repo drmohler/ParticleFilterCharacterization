@@ -178,6 +178,7 @@ def neff(weights):
         return 1. / np.sum(np.square(weights))
 
 def mean_angle(rad):
+    """ Calculate the mean angle, accounting for roll over"""
     mean = phase(sum(rect(1, d) for d in rad)/len(rad))
     #ensure positive mean angle measure
     while mean < 0:
@@ -187,6 +188,10 @@ def mean_angle(rad):
 
 def covariance(particles,mu):
     """
+    Specific covariance calculations accounting for
+    the fact that the heading is circular data and
+    requires adjustment
+
     params:
     ------------
     particles: list of particles
@@ -329,7 +334,6 @@ def ParticleState(particle):
 
 #Generate pseudo time intervals
 def GenerateLambda():
-
     delta_lambda_ratio = 1.2
     nLambda = 29 #number of exp spaced step sizes
     lambda_intervals = []
@@ -394,10 +398,4 @@ def caculate_flow_params(est,P,H,R,z,pmeasure,lam):
 
     in_sum = b5 + Ax
     b = dot(I2,in_sum)
-    # print("A:\n",A,"\n")
-    # print("b:\n",b,"\n")
-    # input("flow parameters")
-
-    # A = -0.5*dot3(dot(P,H.T),inv(lam*dot3(H,P,H.T)+R),H)
-    # b = dot((eye(4)+(2*lam*A)),dot3((eye(4)+(lam*A)),dot3(P,H.T,inv(R)),z)+dot(A,est))
     return A,b

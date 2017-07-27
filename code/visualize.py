@@ -126,9 +126,10 @@ def plot_paths(true_pos,mean_estimate):
             ye_pos_flow = [i[1] for i in mean_estimate[0][tr]]
             plt.plot(xe_pos_flow,ye_pos_flow,'-x' , label=trial_label)
 
-            xe_pos_std = [i[0] for i in mean_estimate[1][tr]]
-            ye_pos_std = [i[1] for i in mean_estimate[1][tr]]
-            plt.plot(xe_pos_std,ye_pos_std,'-^' , label=trial_label_std)
+            if len(mean_estimate) > 1:
+                xe_pos_std = [i[0] for i in mean_estimate[1][tr]]
+                ye_pos_std = [i[1] for i in mean_estimate[1][tr]]
+                plt.plot(xe_pos_std,ye_pos_std,'-^' , label=trial_label_std)
 
     plt.legend()
     plt.xlabel('X (m)')
@@ -137,7 +138,8 @@ def plot_paths(true_pos,mean_estimate):
     gridlines = ax.get_xgridlines() + ax.get_ygridlines()
     for line in gridlines:
         line.set_linestyle('--')
-    plt.savefig("path.png")
+    plt.show()
+    # plt.savefig("path.png")
 
 def plot_RMSE(RMSE):
     """
@@ -161,4 +163,5 @@ def plot_RMSE(RMSE):
     gridlines = ax.get_xgridlines() + ax.get_ygridlines()
     for line in gridlines:
         line.set_linestyle('--')
-    plt.savefig("RMSE.png")
+    plt.show()
+    # plt.savefig("RMSE.png")

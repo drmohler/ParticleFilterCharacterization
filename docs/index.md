@@ -111,17 +111,86 @@
 
       return mu, cov
     ```
+
  <p align="center">
    <img src="PF_track.gif">
  </p>
 
- ## Particle Flow Filtering
 
- In this project we have developed an implementation of the Exact Flow Filter as derived by Duam and Huang. It is to be noted that in this implementation we have foregone the use of Kalman filter prediction and updates, electing to instead apply statistics gathered from the particle distribution for the calculation of state estimates and covariance matrices. 
+## Particle Flow Filtering
+
+ In this project we have developed an implementation of the Exact Flow Filter as derived by Duam and Huang. It is to be noted that in this implementation we have foregone the use of Kalman filter prediction and updates, electing to instead apply statistics gathered from the particle distribution for the calculation of state estimates and covariance matrices.
 
  <p align="center">
-   <img src="PFPF_1.png">
+   <img src="ParticleFlowLambda2.gif", width="486",height="494">
  </p>
 
+ Many of the same methods are implemented for the particle flow simulation in terms of the motion and tracking of the object state. The key differences lie within the departure from resampling techniques to the smooth migration of the particles from the prior to posterior distribution.
 
- ## Filter Comparison
+### Psuedo Time intervals
+For each time step/ measurement of the system particle flow require the use of subdivisions of time to generate the flow of particles. This project implements the use of 29 exponentially distributed time steps ("Particle Filtering with Invertible Particle Flow" Yunpeng Li, Mark Coates). These time steps are generated as using the `GenerateLambda()` function.
+
+ ```python
+def GenerateLambda():
+   delta_lambda_ratio = 1.2
+   nLambda = 29 #number of exp spaced step sizes
+   lambda_intervals = []
+   for i in range(nLambda):
+       lambda_intervals.append(i)
+
+   lambda_1 = (1-delta_lambda_ratio)/(1-delta_lambda_ratio**nLambda)
+   for i in range(nLambda):
+       lambda_intervals[i] = lambda_1*(delta_lambda_ratio**i)
+
+   return lambda_intervals
+ ```
+
+### Flow Parameters
+Daum derives a closed form solution to the log homotopy partial differential equation for particle motion using the following equations to solve for dx/dlambda. These flow parameters are calculated for each respective particle, at a computational cost, as opposed to a global implementation from a "representative" particle.
+
+<p align="center">
+  <img src="FlowEqns.png">
+</p>
+
+This is implemented below in the `calculate_flow_params()` function: 
+
+```python
+def caculate_flow_params(est,P,H,R,z,pmeasure,lam):
+  """
+  Calculate the values for A and b for the given particle
+
+  params:
+  ----------
+  est: predicted mean state estimate
+  P: Covariance matrix generated from particles
+  H: Measurement matrix (numpy array)
+  R: Noise error matrix (numpy array)
+  z: current measurement vector(numpy array)
+  lam: psuedo time interval
+
+  returns:
+  ----------
+  A: Flow parameter
+  b: Flow parameter
+  """
+  HPHt = dot3(H,P,H.T)
+  A_inv = inv((lam*HPHt) + R)
+
+  A = (-0.5)*dot4(P,H.T,A_inv,H)
+
+  I2 = eye(4)+(2*lam*A)
+  I1 = eye(4)+(lam*A)
+  Ri = inv(R)
+
+  IlamAHPHt = dot4(I1,P,H.T,Ri)
+  err = pmeasure - dot(H,est)
+  zdif = z - err
+  b5 = dot(IlamAHPHt,zdif)
+  Ax = dot(A,est)
+
+  in_sum = b5 + Ax
+  b = dot(I2,in_sum)
+  return A,b
+```
+
+## Filter Comparison

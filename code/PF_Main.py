@@ -25,7 +25,7 @@ landmarks = [[20.0,80.0], [50.0,20.0], [80.0,80.0]]
 vis = visualize.vis(world_size,landmarks)
 
 #attempt at implementation of Particle Flow Particle filter (PFPF)
-def PFPF(n,fnoise,tnoise,snoise,time_steps,trials,methods,graphics):
+def PFPF(n,fnoise,tnoise,snoise,time_steps,trials,graphics):
     """
         n: number of particles
         fnoise: forward noise parameter
@@ -35,7 +35,6 @@ def PFPF(n,fnoise,tnoise,snoise,time_steps,trials,methods,graphics):
         methods: list of desired resampling methods for comparison
     """
     #--------------------PARTICLE FILTERING OPERATIONS-----------------------------#
-    m_len = len(methods)
     nLambda = 29
     true_pos=[]
     p_init = []
@@ -43,8 +42,8 @@ def PFPF(n,fnoise,tnoise,snoise,time_steps,trials,methods,graphics):
     R = np.diag([snoise]*len(landmarks)) #measurement error matrix
 
     Bot = Robot.robot() #Truth robot
-    Bot.set_params(n,world_size,landmarks) #set robot environment parameters and number
-                                           # of particles desired
+    Bot.set_params(n,world_size,landmarks) #set robot environment parameters and
+                                           #number of particles desired
 
     Bot2 = Robot.robot()
     Bot2.set_params(n,world_size,landmarks)
@@ -126,49 +125,13 @@ def PFPF(n,fnoise,tnoise,snoise,time_steps,trials,methods,graphics):
                     p[tr][i].set(pState[0],pState[1],pState[2],pState[3])
 
                 xbar, covar = Robot.estimate(w,p[tr])
+                if graphics:
+                    #arbitrarily select the first trial for graphics
+                    vis.visualize(Bot,j+1,p2,p[0],w,xbar)
             mean_estimate[tr].append(xbar)
-            if graphics:
-                #arbitrarily select the first trial for graphics
-                vis.visualize(Bot,t+1,p2,p[0],w,xbar)
 
-    fig, ax = plt.subplots()
-    flag = True
-    flag2 = True
-    count = 0
-    for x,y in true_pos:
-        xt_pos = [i[0] for i in true_pos]
-        yt_pos = [i[1] for i in true_pos]
-
-        if flag:
-            label = "Truth"
-            label
-            flag = False
-        else:
-            label = None
-
-        plt.plot(xt_pos,yt_pos,'-o', color="blue", markeredgecolor="blue", label=label)
-        for tr in range(trials):
-            if flag2:
-                count += 1
-                trial_label = "Trial - " + str(tr+1)
-                if count == trials:
-                    flag2 = False
-            else:
-                trial_label = None
-            xe_pos = [i[0] for i in mean_estimate[tr]]
-            ye_pos = [i[1] for i in mean_estimate[tr]]
-            plt.plot(xe_pos,ye_pos, '-x', label=trial_label)
-
-    plt.legend()
-    plt.xlabel('X (m)')
-    plt.ylabel('Y (m)')
-    ax.grid()
-    gridlines = ax.get_xgridlines() + ax.get_ygridlines()
-    for line in gridlines:
-        line.set_linestyle('--')
-    plt.show()
-
-# return mean_estimate,true_pos
+    PRMSE = Robot.PRMSE(true_pos,mean_estimate)
+    return mean_estimate,true_pos,PRMSE
 
 
 #--------------------------------------------------------------------------#
@@ -220,8 +183,8 @@ def ParticleFilt(n,fnoise,tnoise,snoise,time_steps,trials,methods,graphics):
 
     z = Bot.sense(state) #take initial measurement of surroundings
 
-    # p_init = Robot.create_uniform_particles(n,fnoise,tnoise,snoise,state[2],world_size,landmarks)
-    p_init = Robot.create_gaussian_particles(Bot,n,fnoise,tnoise,snoise,10.,world_size,landmarks)
+    p_init = Robot.create_uniform_particles(n,fnoise,tnoise,snoise,state[2],world_size,landmarks)
+    # p_init = Robot.create_gaussian_particles(Bot,n,fnoise,tnoise,snoise,10.,world_size,landmarks)
     w = [1/n]*n
     #generate initial state estimate and covariance matrix
     xbar , covar = Robot.estimate(w,p_init)
@@ -309,6 +272,9 @@ def ParticleFilt(n,fnoise,tnoise,snoise,time_steps,trials,methods,graphics):
 
 def two_filters(n,fnoise,tnoise,snoise,time_steps,trials,methods,graphics):
     """
+        This functions runs both standard and flow particle filters on
+        the same set of initial data for performance comparisons.
+
         n: number of particles
         fnoise: forward noise parameter
         tnoise: turning noise parameter
@@ -317,7 +283,6 @@ def two_filters(n,fnoise,tnoise,snoise,time_steps,trials,methods,graphics):
         methods: list of desired resampling methods for comparison
     """
     #--------------------PARTICLE FILTERING OPERATIONS--------------------------#
-    m_len = len(methods)
     nLambda = 29
     true_pos=[]
     p_init = []
@@ -412,7 +377,7 @@ def two_filters(n,fnoise,tnoise,snoise,time_steps,trials,methods,graphics):
                 w_norm = [1/n]*n
             xbar, covar = Robot.estimate(w,p[tr])
             xbar_std,covar_std = Robot.estimate(w_norm,p_std[tr])
-            
+
             mean_estimate_std[tr].append(xbar_std)
 
             #-----------------PARTICLE FLOW--------------------------#

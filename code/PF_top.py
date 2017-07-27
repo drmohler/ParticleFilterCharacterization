@@ -85,17 +85,18 @@ n = 500
 fnoise = 0.1
 tnoise = np.radians(2.5)
 snoise = 1
-steps = 150
-trials = 10
+steps = 100
+trials = 2
 graphics = False
 methods = [2]
 
 #run the particle filter for each of the chosen resampling methods
-# est,true,RMSE = PF_Main.ParticleFilt(n,fnoise,tnoise,snoise,steps,trials,methods,graphics)
+# est,truth,PRMSE = PF_Main.ParticleFilt(n,fnoise,tnoise,snoise,steps,trials,methods,graphics)
 # est2,true2,RMSE2 = PF_Main.ParticleFilt(n,fnoise,tnoise,snoise,steps,trials,methods,graphics)
 
 # PRMSE = [RMSE,RMSE2]
 
+# est, truth,PRMSE = PF_Main.PFPF(n,fnoise,tnoise,snoise,steps,trials,graphics)
 
 # PF_Main.PFPF(n,fnoise,tnoise,snoise,steps,trials,methods,graphics)
 est,truth,PRMSE = PF_Main.two_filters(n,fnoise,tnoise,snoise,steps,trials,methods,graphics)
