@@ -121,9 +121,9 @@
 
  In this project we have developed an implementation of the Exact Flow Filter as derived by Duam and Huang. It is to be noted that in this implementation we have foregone the use of Kalman filter prediction and updates, electing to instead apply statistics gathered from the particle distribution for the calculation of state estimates and covariance matrices.
 
- <p align="center">
-   <img src="ParticleFlowLambda2.gif", width="486",height="494">
- </p>
+<p align="center">
+  <img src="ParticleFlowLambda2.gif", width="486",height="494">
+</p>
 
  Many of the same methods are implemented for the particle flow simulation in terms of the motion and tracking of the object state. The key differences lie within the departure from resampling techniques to the smooth migration of the particles from the prior to posterior distribution.
 
@@ -146,13 +146,13 @@ def GenerateLambda():
  ```
 
 ### Flow Parameters
-Daum derives a closed form solution to the log homotopy partial differential equation for particle motion using the following equations to solve for dx/dlambda. These flow parameters are calculated for each respective particle, at a computational cost, as opposed to a global implementation from a "representative" particle.
+Daum derives a closed form solution to the log homotopy partial differential equation for particle motion using the following equations to solve for dx/dlambda. These flow parameters are calculated for each respective particle, at a computational cost, as opposed to a global implementation from a "representative" particle. Where H is the measurement matrix, P is the covariance of the particle cloud, and R is the noise covariance. 
 
 <p align="center">
-  <img src="FlowEqns.png">
+  <img src="FlowEqns.PNG">
 </p>
 
-This is implemented below in the `calculate_flow_params()` function: 
+This is implemented below in the `calculate_flow_params()` function:
 
 ```python
 def caculate_flow_params(est,P,H,R,z,pmeasure,lam):
