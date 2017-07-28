@@ -98,7 +98,7 @@ class robot:
 
     def move(self,turn,forward):
         """
-        turn: variable describing the change in heading (radians)
+        turn: change in heading (radians)
         forward: robots present velocity
         """
         if forward < 0:
@@ -128,8 +128,21 @@ class robot:
         return '[x=%.6s y=%.6s vel=%.6s orient=%.6s]' % (str(self.x), str(self.y), str(self.vel) ,str(self.hdg))
 
 def create_uniform_particles(N,fnoise,tnoise,snoise,v_init,world_size,landmarks):
-    p = [] # list of particles
+    """
+    Params:
+    ---------
+    N: number of particles
+    fnoise: forward noise
+    tnoise: turn noise
+    snoise: sensing noise
+    v_init: initial velocity of the true robot
+    world_size: size of the available area
+    landmarks: measurement landmarks
 
+    returns:
+    p: list of particles
+    """
+    p = [] # list of particles
     for i in range(N): #create a list of particles (uniformly distributed)
         rand_posx =  random.uniform(0.0,1.0)*world_size
         rand_posy = random.uniform(0.0,1.0)*world_size
@@ -231,7 +244,6 @@ def estimate(weights,particles):
         mu[3] = mean_angle(state[3])
 
         cov = covariance(particles,mu)
-        # cov = np.cov(state,rowvar=False)
 
         return mu, cov
 
@@ -239,7 +251,6 @@ def PRMSE(truth,mean_estimate):#pass the list of truth positions and
                                #list of lists containing mean estimates
     n = len(mean_estimate) #number of trials ran
     t = len(mean_estimate[0]) #total time steps
-
 
     PRMSE = []
     x_diffsq = [[] for i in range(n)]
@@ -283,7 +294,6 @@ def resample(N,weights,particles,select):
     return p_new
 
 def systematic_resample(N,weights,particles):
-
     p_new = []
     index = int(random.random()*N)
     beta = 0.0
@@ -303,7 +313,6 @@ def systematic_resample(N,weights,particles):
 
 # Residual systematic
 def RS_resample(N,weights, particles):
-
     p_new = []
     index = [0]*N #Initialize index array
     U = random.random()/N #Generate a random number between 0 and 1/N
@@ -332,8 +341,8 @@ def ParticleState(particle):
     pState = np.asarray([px,py,pvel,phdg])
     return pState
 
-#Generate pseudo time intervals
 def GenerateLambda():
+    """Exponentially distributed pseudo time steps"""
     delta_lambda_ratio = 1.2
     nLambda = 29 #number of exp spaced step sizes
     lambda_intervals = []
@@ -347,7 +356,9 @@ def GenerateLambda():
     return lambda_intervals
 
 def h_jacobian(est, landmarks):
-    #Return the jacobian of the measurement matrix as a numpy arrray
+    """Return the jacobian of the measurement matrix as a numpy arrray
+    note: specific to the distance style measurements used. If different
+    measurements are used this will require modification. """
     H = []
     for i in range(len(landmarks)):
         x_dif = est[0]-landmarks[i][0]
