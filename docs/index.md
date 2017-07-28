@@ -194,3 +194,13 @@ def caculate_flow_params(est,P,H,R,z,pmeasure,lam):
 ```
 
 ## Filter Comparison
+
+The `two_filters()` function is developed to implement both filters in a single
+call. This function supplies both filters (and all designated trials)
+with identical initialized particle sets for comparative result analysis. This
+function returns the state estimates for all conducted trials, the true robot path,
+and the RMSE for each filter style under test.
+
+<p align="center">
+  <img src="dual_filter.png">
+</p>
