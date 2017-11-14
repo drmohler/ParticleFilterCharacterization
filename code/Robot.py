@@ -8,7 +8,7 @@ import numpy as np
 from numpy.random import randn, random, uniform
 from numpy import dot,eye
 from numpy.linalg import inv
-from filterpy.common import dot3
+# from filterpy.common import dot3
 from math import *
 import random
 import matplotlib.pyplot as plt
@@ -24,13 +24,11 @@ class robot:
         self.hdg = 0.0
         self.world_size = 100
         self.landmarks = [[0,0]]
-        self.N = 100
         self.forward_noise = 0.0
         self.turn_noise = 0.0
         self.sense_noise = 0.0
 
     def set_params(self,new_N,new_world_size,new_landmarks):
-        self.N = int(new_N)
         self.world_size = int(new_world_size)
         self.landmarks = new_landmarks
 
@@ -65,16 +63,16 @@ class robot:
         self.turn_noise = float(new_turn_noise)
         self.sense_noise = float(new_sense_noise)
 
-    def sense(self,x):
+    def sense(self, add_noise=None):
         """ Sense the environment: calculate distances to landmarks
         :return measured distances to the known landmarks
+        : by default, add noise to these values
         """
-        x = None
-
         z = []
         for i in range(len(self.landmarks)):
             dist = sqrt((self.x - self.landmarks[i][0]) ** 2 + (self.y - self.landmarks[i][1]) ** 2)
-            dist += random.gauss(0.0, self.sense_noise) #0 mean noise, user defined standard deviation
+            if (add_noise is None) or add_noise==True:
+                dist += random.gauss(0.0, self.sense_noise) #0 mean noise, user defined standard deviation
             z.append(dist)
         return z #measure relative to each landmark
 
@@ -374,6 +372,10 @@ def dot4(A,B,C,D):
     """ Returns the matrix multiplication of A*B*C*D"""
     return dot(A, dot(B, dot(C,D)))
 
+def dot3(A,B,C):
+    """ Returns the matrix multiplication of A*B*C"""
+    return dot(A, dot(B, C))
+
 def caculate_flow_params(est,P,H,R,z,pmeasure,lam):
     """
     Calculate the values for A and b for the given particle
@@ -410,3 +412,24 @@ def caculate_flow_params(est,P,H,R,z,pmeasure,lam):
     in_sum = b5 + Ax
     b = dot(I2,in_sum)
     return A,b
+
+def EnKF_update(particles, meas):
+    N=len(particles)
+    pred_meas=[]
+
+    #First, compute the predicted measurements
+    for i in range(N):
+        pred_meas.append(particles[i].meas(False))
+    pred_meas_mean = np.mean(pred_meas)
+    #Second, compute K
+    state_mean = estimate(None,particles)
+    PH = np.zeros(size(state))
+    for i in range(N):
+        meas_diff = pred_meas[i] - pred_meas_mean
+        PH += np.dot(particles[i].state - state_mean, meas_diff)
+        HPH += np.outer(meas_diff, meas_diff)
+    K = np.dot(PH, np.inv(HPH + np.eye(len(meas))* robot.sense_noise* robot.sense_noise))
+    #Now to apply K to all the particles
+    for i in range(N):
+        particles[i] += np.dot(K, (meas-pred_meas[i] + particles[i].sense_noise * randn(len(meas))))
+    return particles

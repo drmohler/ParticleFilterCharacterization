@@ -59,7 +59,7 @@ while True:
     try:
         fnoise = float(input("Input forward noise parameter: "))
         tnoise = float(input("Input turning noise parameter: "))
-        tnoise = np.radians(tnoise)
+        tnoise = np.deg2rad(tnoise)
         snoise = float(input("Input sensing noise parameter: "))
 
     except ValueError:
@@ -81,11 +81,7 @@ while True:
 
 
 vis = input("Particle visualzations [y/n]?: ")
-if vis == 'y':
-    graphics = True
-else:
-    graphics = False
-
+graphics = bool(vis == 'y')
 
 #DEBUGGING VARIABLE VALUES
 # n = 500
@@ -103,6 +99,6 @@ methods = [2]
 #Particle filter applying particle flow
 # est, truth,PRMSE = PF_Main.PFPF(n,fnoise,tnoise,snoise,steps,trials,graphics)
 
-est,truth,PRMSE = PF_Main.two_filters(n,fnoise,tnoise,snoise,steps,trials,methods,graphics)
+est, truth, PRMSE = PF_Main.two_filters(n, fnoise, tnoise, snoise, steps, trials, methods, graphics)
 visualize.plot_RMSE(PRMSE)
-visualize.plot_paths(truth,est)
+visualize.plot_paths(truth, est)

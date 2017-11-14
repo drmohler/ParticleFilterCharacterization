@@ -6,12 +6,12 @@
     Developed: Summer 2017"""
 
 import Robot
-import ekf
+# import ekf
 import visualize
 import numpy as np
 from numpy.random import randn, random, uniform
 from numpy import dot
-from filterpy.common import dot3
+# from filterpy.common import dot3
 from math import *
 import random
 import matplotlib
@@ -327,6 +327,7 @@ def two_filters(n,fnoise,tnoise,snoise,time_steps,trials,methods,graphics):
     for i in range(trials):
         p.append(p_init)
         p_std.append(p_init)
+        p_enkf.append(p_init)
 
     # Initialize with equal weights
     w = [1/n]*n
@@ -350,17 +351,20 @@ def two_filters(n,fnoise,tnoise,snoise,time_steps,trials,methods,graphics):
 
         true_pos.append([Bot.x,Bot.y]) #keep track of the true position
 
-        z = np.asarray(Bot.sense(state)) #take a measurement
+        z = np.asarray(Bot.sense()) #take a measurement
 
         for tr in range(trials):
             p2=[]
             p2_std = []
+            p2_enkf = []
             for i in range(n):
                 #move the particles
                 p2.append(p[tr][i].move(state[3],state[2]))
                 p2_std.append(p_std[tr][i].move(state[3],state[2]))
+                p2_enkf.append(p_enkf[tr][i].move(state[3],state[2]))
             p[tr] = p2
             p_std[tr] = p2_std
+            p_enkf[tr] = p2_enkf
 
             #generate particle weights based on current measurement
             for i in range(n):
@@ -375,7 +379,6 @@ def two_filters(n,fnoise,tnoise,snoise,time_steps,trials,methods,graphics):
                 resample_count[tr] +=1
                 p_std[tr] = Robot.resample(n,w_norm,p_std[tr],methods[0])
                 w_norm = [1/n]*n
-            xbar, covar = Robot.estimate(w,p[tr])
             xbar_std,covar_std = Robot.estimate(w_norm,p_std[tr])
 
             mean_estimate_std[tr].append(xbar_std)
@@ -406,10 +409,24 @@ def two_filters(n,fnoise,tnoise,snoise,time_steps,trials,methods,graphics):
                 #arbitrarily select the first trial for graphics
                 vis.visualize(Bot,t+1,p2,p[0],w,xbar)
 
+            #-----------------ENSEMBLE KALMAN FILTER--------------------------#
+
+            if graphics and t==0:
+                #arbitrarily select the first trial for graphics
+                vis.visualize(Bot,t,p2,p[0],w,xbar)
+
+            p_enkf[tr] = EnKF_update( particles, z )
+            xbar_enkf, covar_enkf = Robot.estimate(None, p_enkf[tr])
+            mean_estimate_enkf[tr].append(xbar_enkf)
+            if graphics:
+                #arbitrarily select the first trial for graphics
+                vis.visualize(Bot,t+1,p2,p[0],w,xbar_enkf)
+
     PRMSE = Robot.PRMSE(true_pos,mean_estimate)
     PRMSE_std =  Robot.PRMSE(true_pos,mean_estimate_std)
-    total_estimate = [mean_estimate,mean_estimate_std]
-    total_RMSE = [PRMSE,PRMSE_std]
+    PRMSE_enkf = Robot.PRMSE(true_pos, mean_estimate_enkf)
+    total_estimate = [mean_estimate,mean_estimate_std, mean_estimate_enkf]
+    total_RMSE = [PRMSE,PRMSE_std,PRMSE_enkf]
 
     print(total_RMSE)
 
