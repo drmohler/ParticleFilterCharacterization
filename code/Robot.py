@@ -17,18 +17,43 @@ import scipy.stats
 from cmath import rect, phase
 
 class robot:
-    def __init__(self):
+    def __init__(self, ):
         self.x = 0
         self.y = 0
         self.vel = 0.0
         self.hdg = 0.0
         self.world_size = 100
         self.landmarks = [[0,0]]
-        self.forward_noise = 0.0
+        self.model_noise = 0.0
+        self.vel_noise = 0.0
         self.turn_noise = 0.0
         self.sense_noise = 0.0
+    
+    def copy(self):
+        to_return = robot()
+        to_return.x = self.x
+        to_return.y = self.y
+        to_return.vel = self.vel
+        to_return.hdg = self.hdg
+        to_return.world_size = self.world_size
+        to_return.landmarks = self.landmarks
+        to_return.model_noise = self.model_noise
+        to_return.vel_noise = self.vel_noise
+        to_return.turn_noise = self.turn_noise
+        to_return.sense_noise = self.sense_noise
+        return to_return
 
-    def set_params(self,new_N,new_world_size,new_landmarks):
+
+    def get_state_length(self):
+        return 4
+
+    def state(self):
+        return np.array([self.x, self.y, self.vel, self.hdg])
+
+    def get_meas_length(self):
+        return len(self.landmarks)
+
+    def set_params(self,new_world_size,new_landmarks):
         self.world_size = int(new_world_size)
         self.landmarks = new_landmarks
 
@@ -52,15 +77,16 @@ class robot:
         self.vel = float(new_vel)
         self.hdg = float(new_hdg)
 
-    def set_noise(self, new_forward_noise, new_turn_noise, new_sense_noise):
+    def set_noise(self, new_vel_noise, new_turn_noise, new_model_noise, new_sense_noise):
         """ Set the noise parameters, changing them is often useful in particle filters
         :param new_forward_noise: new noise value for the forward movement
         :param new_turn_noise:    new noise value for the turn
         :param new_sense_noise:  new noise value for the sensing
         """
 
-        self.forward_noise = float(new_forward_noise)
+        self.vel_noise = float(new_vel_noise)
         self.turn_noise = float(new_turn_noise)
+        self.model_noise = float(new_model_noise)
         self.sense_noise = float(new_sense_noise)
 
     def sense(self, add_noise=None):
@@ -94,33 +120,31 @@ class robot:
         g = max(g, 1.e-50) #avoid pesky NAN issues
         return g
 
-    def move(self,turn,forward):
+    def move(self, turn, accel):
         """
         turn: change in heading (radians)
         forward: robots present velocity
         """
-        if forward < 0:
+        #turn, and add randomness to the command
+        self.hdg = self.hdg + float(turn) + random.gauss(0.0,self.turn_noise)
+        self.hdg %= 2*np.pi
+
+        self.vel = self.vel + accel + random.gauss(0.0, self.vel_noise)
+        if self.vel < 0:
             raise ValueError('Robot can only move forward')
 
-        #turn, and add randomness to the command
-        hdg = self.hdg + float(turn) + random.gauss(0.0,self.turn_noise)
-        hdg %= 2*np.pi
 
-        dist = float(forward) + random.gauss(0.0,self.forward_noise)
-        vel = self.vel + dist
+        dist = self.vel
+
 
         #Define x and y motion based upon new bearing relative to the x axis
-        x = self.x + (cos(hdg)*dist)
-        y = self.y + (sin(hdg)*dist)
-        x %= self.world_size #cyclic truncate
-        y %= self.world_size
-
-        #set particles
-        res = robot()
-        res.set_params(self.N,self.world_size,self.landmarks)
-        res.set(x,y,vel,hdg) # changes particle's position to the new location
-        res.set_noise(self.forward_noise, self.turn_noise, self.sense_noise)
-        return res
+        self.x = self.x + (cos(self.hdg)*dist) + random.gauss(0.0,self.model_noise)
+        self.y = self.y + (sin(self.hdg)*dist) + random.gauss(0.0,self.model_noise)
+        
+        #TODO:  Put a warning if it goes out of the world size...
+        # x %= self.world_size #cyclic truncate
+        # y %= self.world_size
+        return self
 
     def __repr__(self):
         return '[x=%.6s y=%.6s vel=%.6s orient=%.6s]' % (str(self.x), str(self.y), str(self.vel) ,str(self.hdg))
@@ -147,8 +171,11 @@ def create_uniform_particles(N,fnoise,tnoise,snoise,v_init,world_size,landmarks)
         rand_vel = v_init + random.gauss(0.0,fnoise) #gauss dist for initial vel
         rand_hdg = random.uniform(0.0,1.0)*2.0*np.pi # relative to x axis
         r = robot()
-        r.set_params(N,world_size,landmarks)
-        r.set_noise(fnoise,tnoise,snoise)
+        r.set_params(world_size,landmarks)
+        #TODO:  Make this follow the inputs.  The PF_main doesn't do this right now (it is hard coded) so I just make this the same for now
+        r.set_noise(0.1,np.radians(2.5),.1,1.0)
+
+#        r.set_noise(fnoise,tnoise,snoise)
         r.set(rand_posx,rand_posy,rand_vel,rand_hdg)
         p.append(r)
     return p
@@ -178,8 +205,9 @@ def create_gaussian_particles(bot,N,fnoise,tnoise,snoise,std_dev,world_size,land
         rand_vel = bot.vel + random.gauss(0.0,fnoise) #gauss dist for initial vel
         rand_hdg = random.uniform(0.0,1.0)*2.0*np.pi # relative to x axis
         r = robot()
-        r.set_params(N,world_size,landmarks)
-        r.set_noise(fnoise,tnoise,snoise)
+        r.set_params(world_size,landmarks)
+        #TODO:  Make this follow the inputs.  The PF_main doesn't do this right now (it is hard coded) so I just make this the same for now
+        r.set_noise(0.1,np.radians(2.5),.1,1.0)
         r.set(rand_posx,rand_posy,rand_vel,rand_hdg)
         p.append(r)
     return p
@@ -419,17 +447,34 @@ def EnKF_update(particles, meas):
 
     #First, compute the predicted measurements
     for i in range(N):
-        pred_meas.append(particles[i].meas(False))
-    pred_meas_mean = np.mean(pred_meas)
+        pred_meas.append(particles[i].sense(False))
+    pred_meas_mean = np.mean(pred_meas, 0)
     #Second, compute K
-    state_mean = estimate(None,particles)
-    PH = np.zeros(size(state))
-    for i in range(N):
+    state_mean = estimate(None,particles)[0]
+    PH = np.zeros((particles[i].get_state_length(), particles[i].get_meas_length() ))
+    HPH = np.zeros((particles[i].get_meas_length(), particles[i].get_meas_length() ))
+    for i in range(N): 
+        de_robot = particles[i]
         meas_diff = pred_meas[i] - pred_meas_mean
-        PH += np.dot(particles[i].state - state_mean, meas_diff)
+        PH += np.outer(de_robot.state() - state_mean, meas_diff)
         HPH += np.outer(meas_diff, meas_diff)
-    K = np.dot(PH, np.inv(HPH + np.eye(len(meas))* robot.sense_noise* robot.sense_noise))
+    PH = PH / (N-1)
+    HPH = HPH / (N-1)
+    K = np.dot(PH, inv(HPH + np.eye(len(meas))* de_robot.sense_noise* de_robot.sense_noise))
+    # print('HPH is',HPH)
+    # print('PH is',PH)
     #Now to apply K to all the particles
+    out_particles=[]
     for i in range(N):
-        particles[i] += np.dot(K, (meas-pred_meas[i] + particles[i].sense_noise * randn(len(meas))))
-    return particles
+        delta_state = np.dot(K, (meas-pred_meas[i] + particles[i].sense_noise * randn(len(meas))))
+        # print('Curr state is',particles[i].state())
+        # print("delta_state is ",delta_state)
+        next_state = particles[i].state() + delta_state
+        if (next_state[3] < 0):
+            next_state[3] += 2*np.pi
+        if (next_state[3] > 2*np.pi):
+            next_state[3] -= 2*np.pi
+        going_out = particles[i].copy()
+        going_out.set( next_state[0], next_state[1], next_state[2], next_state[3] ) 
+        out_particles.append(going_out)
+    return out_particles

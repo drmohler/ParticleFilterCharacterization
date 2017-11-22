@@ -5,8 +5,8 @@ Mentor: Clark Taylor Ph.D.
 Developer: David R. Mohler
 Developed: Summer 2017
 """
+import math
 import PF_Main
-import numpy as np
 import visualize
 
 #------------------------------USER INPUTS-------------------------------#
@@ -55,18 +55,21 @@ while True:
     else:
         break
 
-while True:
-    try:
-        fnoise = float(input("Input forward noise parameter: "))
-        tnoise = float(input("Input turning noise parameter: "))
-        tnoise = np.deg2rad(tnoise)
-        snoise = float(input("Input sensing noise parameter: "))
+# while True:
+#     try:
+#         fnoise = float(input("Input forward noise parameter: "))
+#         tnoise = float(input("Input turning noise parameter: "))
+#         tnoise = math.radians(tnoise)
+#         snoise = float(input("Input sensing noise parameter: "))
 
-    except ValueError:
-        print("ERROR: noise parameters must be an floating point values")
+#     except ValueError:
+#         print("ERROR: noise parameters must be an floating point values")
 
-    else:
-        break
+#     else:
+#         break
+fnoise = 0.1
+tnoise = math.radians(2.5)
+snoise = 1.0
 
 while True:
     try:

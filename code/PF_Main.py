@@ -42,11 +42,11 @@ def PFPF(n,fnoise,tnoise,snoise,time_steps,trials,graphics):
     R = np.diag([snoise]*len(landmarks)) #measurement error matrix
 
     Bot = Robot.robot() #Truth robot
-    Bot.set_params(n,world_size,landmarks) #set robot environment parameters and
-                                           #number of particles desired
+    Bot.set_params(world_size,landmarks) #set robot environment parameters and
+                                         #number of particles desired
 
     Bot2 = Robot.robot()
-    Bot2.set_params(n,world_size,landmarks)
+    Bot2.set_params(world_size,landmarks)
 
     #Robot input parameters, velocity, and heading change for the first robot
     U1 =  [0,0,0,0,0,0,0.05,0.05,0.05,0.05,0.05,0,0,0,0,0,0,0]
@@ -55,12 +55,12 @@ def PFPF(n,fnoise,tnoise,snoise,time_steps,trials,graphics):
     #Initialize robot states
     state = [50.0,50.0,1.0,0.0]
 
-    Bot.set_noise(0.1,np.radians(2.5),0)
+    Bot.set_noise(0.1,np.radians(2.5),.1,1.0)
     Bot.set(state[0],state[1],state[2],state[3]) # Initial state of the robot
 
     true_pos.append([Bot.x,Bot.y])
 
-    z = Bot.sense(state) #take initial measurement of surroundings
+    z = Bot.sense() #take initial measurement of surroundings
 
     # p_init = Robot.create_uniform_particles(n,fnoise,tnoise,snoise,state[2],
                                             # world_size,landmarks)
@@ -95,7 +95,7 @@ def PFPF(n,fnoise,tnoise,snoise,time_steps,trials,graphics):
 
         true_pos.append([Bot.x,Bot.y]) #keep track of the true position
 
-        z = np.asarray(Bot.sense(state)) #take a measurement
+        z = np.asarray(Bot.sense()) #take a measurement
 
         for tr in range(trials):
             p2=[]
@@ -115,7 +115,7 @@ def PFPF(n,fnoise,tnoise,snoise,time_steps,trials,graphics):
                 lam += lam_vec[j] #pseudo time step
                 for i in range(len(p[tr])):
                     pState = Robot.ParticleState(p[tr][i])
-                    pmeasure = p[tr][i].sense(pState)
+                    pmeasure = p[tr][i].sense()
                     #calculate H mat for each particle
                     H = Robot.h_jacobian(pState,landmarks)
                     A,b = Robot.caculate_flow_params(xbar,covar,H,R,z,pmeasure,lam)
@@ -163,11 +163,11 @@ def ParticleFilt(n,fnoise,tnoise,snoise,time_steps,trials,methods,graphics):
     resample_percentage = [0]*trials
 
     Bot = Robot.robot()
-    Bot.set_params(n,world_size,landmarks) #set robot environment parameters and number
+    Bot.set_params(world_size,landmarks) #set robot environment parameters and number
                                            # of particles desired
 
     Bot2 = Robot.robot()
-    Bot2.set_params(n,world_size,landmarks)
+    Bot2.set_params(world_size,landmarks)
 
     #Robot input parameters, velocity, and heading change for the first robot
     U1 =  [0,0,0,0,0,0,0.05,0.05,0.05,0.05,0.05,0,0,0,0,0,0,0]
@@ -176,12 +176,12 @@ def ParticleFilt(n,fnoise,tnoise,snoise,time_steps,trials,methods,graphics):
     #Initialize robot states
     state = [50.0,50.0,1.0,0.0]
 
-    Bot.set_noise(0.1,np.radians(2.5),0)
+    Bot.set_noise(0.1, np.radians(2.5), .1, 1.0)
     Bot.set(state[0],state[1],state[2],state[3]) # Initial state of the robot
 
     true_pos.append([Bot.x,Bot.y])
 
-    z = Bot.sense(state) #take initial measurement of surroundings
+    z = Bot.sense() #take initial measurement of surroundings
 
     p_init = Robot.create_uniform_particles(n,fnoise,tnoise,snoise,state[2],world_size,landmarks)
     # p_init = Robot.create_gaussian_particles(Bot,n,fnoise,tnoise,snoise,10.,world_size,landmarks)
@@ -216,7 +216,7 @@ def ParticleFilt(n,fnoise,tnoise,snoise,time_steps,trials,methods,graphics):
 
         true_pos.append([Bot.x,Bot.y])
 
-        z = Bot.sense(state) #take a measurement
+        z = Bot.sense() #take a measurement
         for m in range(m_len): #known issue: m loop is not properly structured
                                #to handle multiple resampling methods at this time.
             for tr in range(trials):
@@ -288,16 +288,14 @@ def two_filters(n,fnoise,tnoise,snoise,time_steps,trials,methods,graphics):
     p_init = []
     p = []
     p_std = []
+    p_enkf = []
     R = np.diag([snoise]*len(landmarks)) #measurement error matrix
     resample_count = [0]*trials
     resample_percentage = [0]*trials
 
     Bot = Robot.robot() #Truth robot
-    Bot.set_params(n,world_size,landmarks) #set robot environment parameters and number
+    Bot.set_params(world_size,landmarks) #set robot environment parameters and number
                                            # of particles desired
-
-    Bot2 = Robot.robot()
-    Bot2.set_params(n,world_size,landmarks)
 
     #Robot input parameters, velocity, and heading change for the first robot
     U1 =  [0,0,0,0,0,0,0.05,0.05,0.05,0.05,0.05,0,0,0,0,0,0,0]
@@ -306,28 +304,38 @@ def two_filters(n,fnoise,tnoise,snoise,time_steps,trials,methods,graphics):
     #Initialize robot states
     state = [50.0,50.0,1.0,0.0]
 
-    Bot.set_noise(0.1,np.radians(2.5),0)
+    #TODO:  This should really correlated with the inputs!
+    Bot.set_noise(0.1, np.radians(2.5), .1, 1.0)
     Bot.set(state[0],state[1],state[2],state[3]) # Initial state of the robot
 
     true_pos.append([Bot.x,Bot.y])
 
-    z = Bot.sense(state) #take initial measurement of surroundings
+    z = Bot.sense() #take initial measurement of surroundings
 
-    p_init = Robot.create_uniform_particles(n,fnoise,tnoise,snoise,state[2],
-                                            world_size,landmarks)
-    # p_init = Robot.create_gaussian_particles(Bot,n,fnoise,tnoise,snoise,10.,
-                                            #  world_size,landmarks)
+    # p_init = Robot.create_uniform_particles(n,fnoise,tnoise,snoise,state[2],
+    #                                         world_size,landmarks)
+    p_init = Robot.create_gaussian_particles(Bot,n,fnoise,tnoise,snoise,10,
+                                             world_size,landmarks)
 
     mean_estimate = [[]for i in range(trials)]
     mean_estimate_std = [[]for i in range(trials)]
+    mean_estimate_enkf = [[]for i in range(trials)]
     PRMSE = []
     PRMSE_std = []
 
     # create a list of lists for every trial
+    # Have to do this carefully as Python doesn't like to actually copy things
     for i in range(trials):
-        p.append(p_init)
-        p_std.append(p_init)
-        p_enkf.append(p_init)
+        p_tmp1=[]
+        p_tmp2=[]
+        p_tmp3=[]
+        for j in range(len(p_init)):
+            p_tmp1.append(p_init[j].copy())
+            p_tmp2.append(p_init[j].copy())
+            p_tmp3.append(p_init[j].copy())
+        p.append(p_tmp1)
+        p_std.append(p_tmp2)
+        p_enkf.append(p_tmp3)
 
     # Initialize with equal weights
     w = [1/n]*n
@@ -341,30 +349,23 @@ def two_filters(n,fnoise,tnoise,snoise,time_steps,trials,methods,graphics):
         print(t)
         #update states based on input arrays above (U1 and U2)
         control = [U1[t%len(U1)],U2[t%len(U2)]]
-        state[2] = state[2] + control[0]
-        state[3] = np.radians(control[1])
 
         #move the robot based on the input states
-        Bot = Bot.move(state[3],state[2])
-        state[0] = Bot.x
-        state[1] = Bot.y
+        print('Before position, velocity, and heading are',Bot.state())        
+        Bot.move(np.radians(control[1]), control[0])
+        state = Bot.state()
+        print('After position, velocity, and heading are',state)
 
         true_pos.append([Bot.x,Bot.y]) #keep track of the true position
 
         z = np.asarray(Bot.sense()) #take a measurement
 
         for tr in range(trials):
-            p2=[]
-            p2_std = []
-            p2_enkf = []
             for i in range(n):
                 #move the particles
-                p2.append(p[tr][i].move(state[3],state[2]))
-                p2_std.append(p_std[tr][i].move(state[3],state[2]))
-                p2_enkf.append(p_enkf[tr][i].move(state[3],state[2]))
-            p[tr] = p2
-            p_std[tr] = p2_std
-            p_enkf[tr] = p2_enkf
+                p[tr][i].move(state[3],state[2])
+                p_std[tr][i].move(state[3],state[2])
+                p_enkf[tr][i].move(state[3],state[2])
 
             #generate particle weights based on current measurement
             for i in range(n):
@@ -385,16 +386,14 @@ def two_filters(n,fnoise,tnoise,snoise,time_steps,trials,methods,graphics):
 
             #-----------------PARTICLE FLOW--------------------------#
 
-            if graphics and t==0:
-                #arbitrarily select the first trial for graphics
-                vis.visualize(Bot,t,p2,p[0],w,xbar)
+            xbar, covar = Robot.estimate(w,p[tr])
 
             lam = 0
             for j in range(nLambda):
                 lam += lam_vec[j] #pseudo time step
                 for i in range(len(p[tr])):
                     pState = Robot.ParticleState(p[tr][i])
-                    pmeasure = p[tr][i].sense(pState)
+                    pmeasure = p[tr][i].sense()
                     #calculate H mat for each particle
                     H = Robot.h_jacobian(pState,landmarks)
                     A,b = Robot.caculate_flow_params(xbar,covar,H,R,z,pmeasure,lam)
@@ -405,22 +404,16 @@ def two_filters(n,fnoise,tnoise,snoise,time_steps,trials,methods,graphics):
 
                 xbar, covar = Robot.estimate(w,p[tr])
             mean_estimate[tr].append(xbar)
-            if graphics:
-                #arbitrarily select the first trial for graphics
-                vis.visualize(Bot,t+1,p2,p[0],w,xbar)
 
             #-----------------ENSEMBLE KALMAN FILTER--------------------------#
 
-            if graphics and t==0:
-                #arbitrarily select the first trial for graphics
-                vis.visualize(Bot,t,p2,p[0],w,xbar)
-
-            p_enkf[tr] = EnKF_update( particles, z )
-            xbar_enkf, covar_enkf = Robot.estimate(None, p_enkf[tr])
+            p_enkf_next = Robot.EnKF_update( p_enkf[tr], z )
+            xbar_enkf, covar_enkf = Robot.estimate(None, p_enkf_next)
             mean_estimate_enkf[tr].append(xbar_enkf)
             if graphics:
                 #arbitrarily select the first trial for graphics
-                vis.visualize(Bot,t+1,p2,p[0],w,xbar_enkf)
+                vis.visualize(Bot,t,p_enkf[0],p_enkf_next,w,xbar_enkf)
+            p_enkf[tr] = p_enkf_next
 
     PRMSE = Robot.PRMSE(true_pos,mean_estimate)
     PRMSE_std =  Robot.PRMSE(true_pos,mean_estimate_std)
