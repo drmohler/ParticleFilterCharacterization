@@ -203,7 +203,11 @@ def create_gaussian_particles(bot,N,fnoise,tnoise,snoise,std_dev,world_size,land
         rand_posy = random.gauss(bot.y,std_dev)
         rand_posy %= world_size
         rand_vel = bot.vel + random.gauss(0.0,fnoise) #gauss dist for initial vel
-        rand_hdg = random.uniform(0.0,1.0)*2.0*np.pi # relative to x axis
+        #Just testing...
+        rand_hdg = random.uniform(0.0,2.0*np.pi)
+        if rand_hdg < 0:
+            rand_hdg += 2.0*np.pi
+        #rand_hdg = random.uniform(0.0,1.0)*2.0*np.pi # relative to x axis
         r = robot()
         r.set_params(world_size,landmarks)
         #TODO:  Make this follow the inputs.  The PF_main doesn't do this right now (it is hard coded) so I just make this the same for now
@@ -216,9 +220,12 @@ def create_gaussian_particles(bot,N,fnoise,tnoise,snoise,std_dev,world_size,land
 def neff(weights):
         return 1. / np.sum(np.square(weights))
 
-def mean_angle(rad):
+def mean_angle(rad, weights):
     """ Calculate the mean angle, accounting for roll over"""
-    mean = phase(sum(rect(1, d) for d in rad)/len(rad))
+    if weights==None:
+        mean = phase(sum(rect(1, d) for d in rad)/len(rad))
+    else:
+        mean = phase(sum(rect(a,b) for a,b in zip(weights, rad)))
     #ensure positive mean angle measure
     while mean < 0:
         mean += 2*np.pi
@@ -267,7 +274,7 @@ def estimate(weights,particles):
 
         #calculate the mean estimate of the state
         mu = np.average(state, weights=weights, axis=0) # should contain x,y, and heading
-        mu[3] = mean_angle(state[3])
+        mu[3] = mean_angle(state[:,3], weights)
 
         cov = covariance(particles,mu)
 
@@ -332,7 +339,7 @@ def systematic_resample(N,weights,particles):
         while beta > weights[index]:
             beta -= weights[index]
             index = (index + 1)% N
-        p_new.append(particles[index])
+        p_new.append(particles[index].copy())
     particles = p_new
 
     return particles
@@ -356,7 +363,7 @@ def RS_resample(N,weights, particles):
         U = U + Ns/N - weights[j]
 
     for i in range(len(index)):
-        p_new.append(particles[index[i]])
+        p_new.append(particles[index[i]].copy())
     particles = p_new
 
     return particles
@@ -456,6 +463,11 @@ def EnKF_update(particles, meas):
     for i in range(N): 
         de_robot = particles[i]
         meas_diff = pred_meas[i] - pred_meas_mean
+        state_diff = de_robot.state() - state_mean
+        if state_diff[3] > np.pi:
+            state_diff[3] -= 2*np.pi
+        if state_diff[3] < -np.pi:
+            state_diff[3] += 2*np.pi
         PH += np.outer(de_robot.state() - state_mean, meas_diff)
         HPH += np.outer(meas_diff, meas_diff)
     PH = PH / (N-1)
@@ -463,6 +475,7 @@ def EnKF_update(particles, meas):
     K = np.dot(PH, inv(HPH + np.eye(len(meas))* de_robot.sense_noise* de_robot.sense_noise))
     # print('HPH is',HPH)
     # print('PH is',PH)
+    # print('K is ',K)
     #Now to apply K to all the particles
     out_particles=[]
     for i in range(N):

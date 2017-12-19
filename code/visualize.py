@@ -98,7 +98,7 @@ def plot_paths(true_pos,mean_estimate):
     count = 0
     trials = len(mean_estimate[0])
 
-    for x,y in true_pos:
+    #for x,y in true_pos:
         xt_pos = [i[0] for i in true_pos]
         yt_pos = [i[1] for i in true_pos]
 
@@ -115,11 +115,13 @@ def plot_paths(true_pos,mean_estimate):
                 count += 1
                 trial_label =  "Flow Trial - " + str(tr+1)
                 trial_label_std = "Std. Trial - " + str(tr+1)
+                trial_label_enkf = "EnKF Trial - " + str(tr+1)
                 if count == trials:
                     flag2 = False
             else:
                 trial_label = None
                 trial_label_std = None
+                trial_label_enkf = None
             xe_pos_flow = [i[0] for i in mean_estimate[0][tr]]
             ye_pos_flow = [i[1] for i in mean_estimate[0][tr]]
             plt.plot(xe_pos_flow,ye_pos_flow,'-x' , label=trial_label)
@@ -128,6 +130,11 @@ def plot_paths(true_pos,mean_estimate):
                 xe_pos_std = [i[0] for i in mean_estimate[1][tr]]
                 ye_pos_std = [i[1] for i in mean_estimate[1][tr]]
                 plt.plot(xe_pos_std,ye_pos_std,'-^' , label=trial_label_std)
+
+            if len(mean_estimate) > 2:
+                xe_pos_enkf = [i[0] for i in mean_estimate[2][tr]]
+                ye_pos_enkf = [i[1] for i in mean_estimate[2][tr]]
+                plt.plot(xe_pos_enkf,ye_pos_enkf,'-s' , label=trial_label_enkf)
 
     plt.legend()
     plt.xlabel('X (m)')
@@ -150,8 +157,10 @@ def plot_RMSE(RMSE):
     for m in range(len(RMSE)):
         if m == 0:
             method = "Flow"
-        else:
+        elif m== 1:
             method = "Std."
+        else:
+            method = "ENkf"
         plt.plot(RMSE[m],label=method)
     plt.legend()
     plt.xlabel('Time (s)')
