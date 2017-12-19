@@ -84,7 +84,7 @@ class vis:
 
         plt.close()
 
-def plot_paths(true_pos,mean_estimate):
+def plot_paths(true_pos,mean_estimate,save_file_name=None):
     """
     Params:
     -----------------
@@ -92,49 +92,32 @@ def plot_paths(true_pos,mean_estimate):
     mean_estimate: list of mean estimate coordinates from PF and PFPF
     """
     fig, ax = plt.subplots()
-    flag = True
-    flag2 = True
-    flag3 = True
-    count = 0
     trials = len(mean_estimate[0])
 
     #for x,y in true_pos:
-        xt_pos = [i[0] for i in true_pos]
-        yt_pos = [i[1] for i in true_pos]
+    xt_pos = [i[0] for i in true_pos]
+    yt_pos = [i[1] for i in true_pos]
 
-        if flag:
-            label = "Truth"
-            flag = False
-        else:
-            label = None
+    plt.plot(xt_pos,yt_pos,'-o', color="blue", markeredgecolor="blue", label="Truth")
 
-        plt.plot(xt_pos,yt_pos,'-o', color="blue", markeredgecolor="blue", label=label)
+    for tr in range(trials):
+        trial_label =  "Flow Trial - " + str(tr+1)
+        trial_label_std = "Std. Trial - " + str(tr+1)
+        trial_label_enkf = "EnKF Trial - " + str(tr+1)
 
-        for tr in range(trials):
-            if flag2:
-                count += 1
-                trial_label =  "Flow Trial - " + str(tr+1)
-                trial_label_std = "Std. Trial - " + str(tr+1)
-                trial_label_enkf = "EnKF Trial - " + str(tr+1)
-                if count == trials:
-                    flag2 = False
-            else:
-                trial_label = None
-                trial_label_std = None
-                trial_label_enkf = None
-            xe_pos_flow = [i[0] for i in mean_estimate[0][tr]]
-            ye_pos_flow = [i[1] for i in mean_estimate[0][tr]]
-            plt.plot(xe_pos_flow,ye_pos_flow,'-x' , label=trial_label)
+        xe_pos_flow = [i[0] for i in mean_estimate[0][tr]]
+        ye_pos_flow = [i[1] for i in mean_estimate[0][tr]]
+        plt.plot(xe_pos_flow,ye_pos_flow,'-x' , label=trial_label)
 
-            if len(mean_estimate) > 1:
-                xe_pos_std = [i[0] for i in mean_estimate[1][tr]]
-                ye_pos_std = [i[1] for i in mean_estimate[1][tr]]
-                plt.plot(xe_pos_std,ye_pos_std,'-^' , label=trial_label_std)
+        if len(mean_estimate) > 1:
+            xe_pos_std = [i[0] for i in mean_estimate[1][tr]]
+            ye_pos_std = [i[1] for i in mean_estimate[1][tr]]
+            plt.plot(xe_pos_std,ye_pos_std,'-^' , label=trial_label_std)
 
-            if len(mean_estimate) > 2:
-                xe_pos_enkf = [i[0] for i in mean_estimate[2][tr]]
-                ye_pos_enkf = [i[1] for i in mean_estimate[2][tr]]
-                plt.plot(xe_pos_enkf,ye_pos_enkf,'-s' , label=trial_label_enkf)
+        if len(mean_estimate) > 2:
+            xe_pos_enkf = [i[0] for i in mean_estimate[2][tr]]
+            ye_pos_enkf = [i[1] for i in mean_estimate[2][tr]]
+            plt.plot(xe_pos_enkf,ye_pos_enkf,'-s' , label=trial_label_enkf)
 
     plt.legend()
     plt.xlabel('X (m)')
@@ -144,9 +127,10 @@ def plot_paths(true_pos,mean_estimate):
     for line in gridlines:
         line.set_linestyle('--')
     plt.show()
-    # plt.savefig("path.png")
+    if save_file_name!= None:
+        plt.savefig(save_file_name)
 
-def plot_RMSE(RMSE):
+def plot_RMSE(RMSE, save_file_name=None):
     """
     Params:
     -----------------
@@ -171,4 +155,5 @@ def plot_RMSE(RMSE):
     for line in gridlines:
         line.set_linestyle('--')
     plt.show()
-    # plt.savefig("RMSE.png")
+    if save_file_name!=None:
+        plt.savefig(save_file_name)

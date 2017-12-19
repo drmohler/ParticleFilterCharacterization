@@ -131,7 +131,8 @@ class robot:
 
         self.vel = self.vel + accel + random.gauss(0.0, self.vel_noise)
         if self.vel < 0:
-            raise ValueError('Robot can only move forward')
+            #Not sure this is a great solution, but keeps things from being ambiguous
+            self.vel=0
 
 
         dist = self.vel
@@ -232,6 +233,7 @@ def mean_angle(rad, weights):
     mean %= 2*np.pi
     return mean
 
+#TODO:  covariance should consider the weighst!
 def covariance(particles,mu):
     """
     Specific covariance calculations accounting for

@@ -338,10 +338,10 @@ def two_filters(n,fnoise,tnoise,snoise,time_steps,trials,methods,graphics):
         p_std.append(p_tmp2)
         p_enkf.append(p_tmp3)
         # Initialize with equal weights
-        w = [1/n]*n
+        w = [1/n]*n  #Need a different object for each w_std
         w_std.append(w)
 
-
+    w = [1/n]*n  #Make one that is not a copy sitting in w_std
     #Generate pseudo time intervals
     lam_vec = Robot.GenerateLambda()
     tt = 0
@@ -373,18 +373,17 @@ def two_filters(n,fnoise,tnoise,snoise,time_steps,trials,methods,graphics):
             print("Std:  mean is (before weighting)", xbar_std)
             for i in range(n):
                 w_std[tr][i] *= p_std[tr][i].measurement_prob(z)
-            w_norm = []
+            total_weight = np.sum(w_std[tr])
             for i in range(n):
-                # normalize the importance weights
-                w_norm.append((w_std[tr][i])/np.sum(w_std[tr]))
-            neff = int(Robot.neff(w_norm)) #calculate the effective sample size
+                w_std[tr][i] /= total_weight
+            neff = int(Robot.neff(w_std[tr])) #calculate the effective sample size
             #if the effective sample size falls below 50% resample
             p_std_prior = p_std[tr] #Keep around for visulization
             if neff < n/2:
                 resample_count[tr] +=1
-                p_std[tr] = Robot.resample(n,w_norm,p_std[tr],methods[0])
-                w_norm = [1/n]*n
-            xbar_std,covar_std = Robot.estimate(w_norm,p_std[tr])
+                p_std[tr] = Robot.resample(n,w_std[tr],p_std[tr],methods[0])
+                w_std[tr] = [1/n]*n
+            xbar_std,covar_std = Robot.estimate(w_std[tr],p_std[tr])
             print("Std:  mean is (after resample)", xbar_std)
             mean_estimate_std[tr].append(xbar_std)
 
