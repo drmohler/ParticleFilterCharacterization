@@ -22,10 +22,10 @@ world_size = 100
 landmarks = [[20.0,80.0], [50.0,20.0], [80.0,80.0]]
 
 #transport needed visualization parameters to the visualization module
-vis = visualize.vis(world_size,landmarks)
+vis = visualize.vis(world_size, landmarks)
 
 #attempt at implementation of Particle Flow Particle filter (PFPF)
-def PFPF(n,fnoise,tnoise,snoise,time_steps,trials,graphics):
+def PFPF(n, fnoise, tnoise, snoise, time_steps, trials, graphics):
     """
         n: number of particles
         fnoise: forward noise parameter
@@ -36,36 +36,36 @@ def PFPF(n,fnoise,tnoise,snoise,time_steps,trials,graphics):
     """
     #--------------------PARTICLE FILTERING OPERATIONS-----------------------------#
     nLambda = 29
-    true_pos=[]
+    true_pos = []
     p_init = []
     p = []
     R = np.diag([snoise]*len(landmarks)) #measurement error matrix
 
     Bot = Robot.robot() #Truth robot
-    Bot.set_params(world_size,landmarks) #set robot environment parameters and
+    Bot.set_params(world_size, landmarks) #set robot environment parameters and
                                          #number of particles desired
 
     Bot2 = Robot.robot()
-    Bot2.set_params(world_size,landmarks)
+    Bot2.set_params(world_size, landmarks)
 
     #Robot input parameters, velocity, and heading change for the first robot
-    U1 =  [0,0,0,0,0,0,0.05,0.05,0.05,0.05,0.05,0,0,0,0,0,0,0]
+    U1 = [0,0,0,0,0,0,0.05,0.05,0.05,0.05,0.05,0,0,0,0,0,0,0]
     U2 = [15.0,15.0,15.0,15.0,15.0,15.0,0,0,0,0,0,0,0,0,0,0,0,0]
 
     #Initialize robot states
     state = [50.0,50.0,1.0,0.0]
 
-    Bot.set_noise(0.1,np.radians(2.5),.1,1.0)
-    Bot.set(state[0],state[1],state[2],state[3]) # Initial state of the robot
+    Bot.set_noise(0.1, np.radians(2.5), .1, 1.0)
+    Bot.set(state[0], state[1], state[2], state[3]) # Initial state of the robot
 
-    true_pos.append([Bot.x,Bot.y])
+    true_pos.append([Bot.x, Bot.y])
 
     z = Bot.sense() #take initial measurement of surroundings
 
     # p_init = Robot.create_uniform_particles(n,fnoise,tnoise,snoise,state[2],
                                             # world_size,landmarks)
-    p_init = Robot.create_gaussian_particles(Bot,n,fnoise,tnoise,snoise,10.,
-                                             world_size,landmarks)
+    p_init = Robot.create_gaussian_particles(Bot, n, fnoise, tnoise, snoise, 10.,
+                                             world_size, landmarks)
 
     mean_estimate = [[]for i in range(trials)]
     PRMSE = []

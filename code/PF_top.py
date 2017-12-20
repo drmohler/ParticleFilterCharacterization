@@ -1,5 +1,5 @@
 """ Top level file to run multiple particle filters and
-    compare the resutlst
+    compare the results
 
 Mentor: Clark Taylor Ph.D.
 Developer: David R. Mohler
@@ -10,7 +10,7 @@ import PF_Main
 import visualize
 
 #------------------------------USER INPUTS-------------------------------#
-resample_methods = {1:"Systematic resample", 2:"Residual systematic resample"}
+#resample_methods = {1:"Systematic resample", 2:"Residual systematic resample"}
 
 #NOTE: KNOWN ISSUE WITH MULTIPLE RESAMPLING METHODS. FOR PROPER OPERATION
 #LIMIT TO A SINGLE METHOD.

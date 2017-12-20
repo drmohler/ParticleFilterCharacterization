@@ -8,19 +8,18 @@ Developed: Summer 2017"""
 import numpy as np
 from numpy.random import randn, random, uniform
 from math import *
-import random
 import matplotlib
 import matplotlib.pyplot as plt
 import scipy.stats
 
 #---------------------FUNCTIONS FOR DISPLAY ----------------------------------#
 class vis:
-    def __init__(self,world_size,landmarks):
+    def __init__(self, world_size, landmarks):
         self.world_size = world_size
         self.landmarks = landmarks
 
 
-    def visualize(self,robot, step, p , pr, weights,estimate):
+    def visualize(self, robot, step, p, pr, weights, estimate):
         """
         robot: current robot object
         step: current step
@@ -33,7 +32,7 @@ class vis:
 
         grid = [0,self.world_size,0,self.world_size]
         plt.axis(grid)
-        plt.grid(b=True, which='major',color='0.75', linestyle='--')
+        plt.grid(b=True, which='major', color='0.75', linestyle='--')
         plt.xticks([i for i in range(0,int(self.world_size),int(self.world_size/10))])
         plt.yticks([i for i in range(0,int(self.world_size),int(self.world_size/10))])
 
@@ -41,11 +40,11 @@ class vis:
         for ind in range(len(p)):
 
             #particles (ornage)
-            circle = plt.Circle((p[ind].x,p[ind].y),1., facecolor='#ffb266', edgecolor='#994c00', alpha=0.5)
+            circle = plt.Circle((p[ind].x, p[ind].y), 1., facecolor='#ffb266', edgecolor='#994c00', alpha=0.5)
             plt.gca().add_patch(circle)
 
             #particles hdg
-            arrow = plt.Arrow(p[ind].x,p[ind].y,2*cos(p[ind].hdg),2*sin(p[ind].hdg),
+            arrow = plt.Arrow(p[ind].x, p[ind].y,2*cos(p[ind].hdg),2*sin(p[ind].hdg),
                                 alpha=1., facecolor='#994c00', edgecolor='#994c00')
             plt.gca().add_patch(arrow)
 
@@ -101,18 +100,18 @@ def plot_paths(true_pos,mean_estimate,save_file_name=None):
     plt.plot(xt_pos,yt_pos,'-o', color="blue", markeredgecolor="blue", label="Truth")
 
     for tr in range(trials):
-        trial_label =  "Flow Trial - " + str(tr+1)
+        trial_label = "Flow Trial - " + str(tr+1)
         trial_label_std = "Std. Trial - " + str(tr+1)
         trial_label_enkf = "EnKF Trial - " + str(tr+1)
 
         xe_pos_flow = [i[0] for i in mean_estimate[0][tr]]
         ye_pos_flow = [i[1] for i in mean_estimate[0][tr]]
-        plt.plot(xe_pos_flow,ye_pos_flow,'-x' , label=trial_label)
+        plt.plot(xe_pos_flow, ye_pos_flow, '-x', label=trial_label)
 
         if len(mean_estimate) > 1:
             xe_pos_std = [i[0] for i in mean_estimate[1][tr]]
             ye_pos_std = [i[1] for i in mean_estimate[1][tr]]
-            plt.plot(xe_pos_std,ye_pos_std,'-^' , label=trial_label_std)
+            plt.plot(xe_pos_std, ye_pos_std, '-^', label=trial_label_std)
 
         if len(mean_estimate) > 2:
             xe_pos_enkf = [i[0] for i in mean_estimate[2][tr]]
