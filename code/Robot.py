@@ -58,16 +58,17 @@ class robot:
         self.landmarks = new_landmarks
 
     def set(self,new_x,new_y,new_vel,new_hdg): #place the robot at a given spot
-        if new_x < 0 or new_x >= self.world_size:
-            print("current world size: ", self.world_size)
-            print("Bad X value: ",new_x)
-            raise ValueError('X coordinate out of bounds')
+#         if new_x < 0 or new_x >= self.world_size:
+#             print("current world size: ", self.world_size)
+#             print("Bad X value: ",new_x)
+# #            raise ValueError('X coordinate out of bounds')
         if new_vel < 0:
-            print("Negative Velocity Occured.")
-            raise ValueError('Non-positive velocity')
-        if new_y < 0 or new_y >= self.world_size:
-            print("Bad Y value: ",new_y)
-            raise ValueError('Y coordinate out of bounds')
+            new_vel=0.0001
+            print("Negative Velocity Occurred.")
+#            raise ValueError('Non-positive velocity')
+#         if new_y < 0 or new_y >= self.world_size:
+#             print("Bad Y value: ",new_y)
+# #            raise ValueError('Y coordinate out of bounds')
         if new_hdg < 0 or new_hdg >= 2*np.pi:
             print("Bad hdg value: ",new_hdg)
             raise ValueError('hdg must be in range [0,2*Pi]')
@@ -120,16 +121,20 @@ class robot:
         g = max(g, 1.e-50) #avoid pesky NAN issues
         return g
 
-    def move(self, turn, accel):
+    def move(self, turn, accel, add_noise=None):
         """
         turn: change in heading (radians)
         forward: robots present velocity
         """
         #turn, and add randomness to the command
-        self.hdg = self.hdg + float(turn) + random.gauss(0.0,self.turn_noise)
+        self.hdg = self.hdg + float(turn) 
+        if (add_noise is None) or add_noise == True:
+            self.hdg += random.gauss(0.0,self.turn_noise)
         self.hdg %= 2*np.pi
 
-        self.vel = self.vel + accel + random.gauss(0.0, self.vel_noise)
+        self.vel = self.vel + accel 
+        if (add_noise is None) or add_noise == True:
+            self.vel += random.gauss(0.0, self.vel_noise)
         if self.vel < 0:
             #Not sure this is a great solution, but keeps things from being ambiguous
             self.vel=0
@@ -139,8 +144,11 @@ class robot:
 
 
         #Define x and y motion based upon new bearing relative to the x axis
-        self.x = self.x + (cos(self.hdg)*dist) + random.gauss(0.0,self.model_noise)
-        self.y = self.y + (sin(self.hdg)*dist) + random.gauss(0.0,self.model_noise)
+        self.x = self.x + (cos(self.hdg)*dist)
+        self.y = self.y + (sin(self.hdg)*dist)
+        if (add_noise is None) or add_noise == True:
+            self.x += random.gauss(0.0, self.model_noise)
+            self.y += random.gauss(0.0, self.model_noise)
         
         #TODO:  Put a warning if it goes out of the world size...
         # x %= self.world_size #cyclic truncate
@@ -150,13 +158,15 @@ class robot:
     def __repr__(self):
         return '[x=%.6s y=%.6s vel=%.6s orient=%.6s]' % (str(self.x), str(self.y), str(self.vel) ,str(self.hdg))
 
-def create_uniform_particles(N,fnoise,tnoise,snoise,v_init,world_size,landmarks):
+def create_uniform_particles(N, vnoise, tnoise, fnoise, snoise, v_init, world_size, landmarks):
     """
     Params:
     ---------
     N: number of particles
-    fnoise: forward noise
+    vnoise: velocity noise
     tnoise: turn noise
+    fnoise: forward noise
+    
     snoise: sensing noise
     v_init: initial velocity of the true robot
     world_size: size of the available area
@@ -173,15 +183,14 @@ def create_uniform_particles(N,fnoise,tnoise,snoise,v_init,world_size,landmarks)
         rand_hdg = random.uniform(0.0,1.0)*2.0*np.pi # relative to x axis
         r = robot()
         r.set_params(world_size,landmarks)
-        #TODO:  Make this follow the inputs.  The PF_main doesn't do this right now (it is hard coded) so I just make this the same for now
-        r.set_noise(0.1,np.radians(2.5),.1,1.0)
+        r.set_noise(vnoise, tnoise, fnoise, snoise)
 
 #        r.set_noise(fnoise,tnoise,snoise)
         r.set(rand_posx,rand_posy,rand_vel,rand_hdg)
         p.append(r)
     return p
 
-def create_gaussian_particles(bot,N,fnoise,tnoise,snoise,std_dev,world_size,landmarks):
+def create_gaussian_particles(bot, N, vnoise, tnoise, fnoise, snoise, std_dev, world_size, landmarks):
     """
     Params:
     ---------
@@ -211,17 +220,17 @@ def create_gaussian_particles(bot,N,fnoise,tnoise,snoise,std_dev,world_size,land
         #rand_hdg = random.uniform(0.0,1.0)*2.0*np.pi # relative to x axis
         r = robot()
         r.set_params(world_size,landmarks)
-        #TODO:  Make this follow the inputs.  The PF_main doesn't do this right now (it is hard coded) so I just make this the same for now
-        r.set_noise(0.1,np.radians(2.5),.1,1.0)
+        r.set_noise(vnoise, tnoise, fnoise, snoise)
         r.set(rand_posx,rand_posy,rand_vel,rand_hdg)
         p.append(r)
     return p
 
 #Function to calculate the effective sample size
+#Assumes they add to one when coming in...
 def neff(weights):
-        return 1. / np.sum(np.square(weights))
+    return 1 / np.sum(np.square(weights))
 
-def mean_angle(rad, weights):
+def mean_angle(rad, weights=None):
     """ Calculate the mean angle, accounting for roll over"""
     if weights==None:
         mean = phase(sum(rect(1, d) for d in rad)/len(rad))
@@ -288,23 +297,24 @@ def PRMSE(truth,mean_estimate):#pass the list of truth positions and
     t = len(mean_estimate[0]) #total time steps
 
     PRMSE = []
-    x_diffsq = [[] for i in range(n)]
-    diffsq = [[] for i in range(t)]
-    dist = [[] for i in range(n)]
-
-    for i in range(n): #compare each set of mean estimates against the truth, sum, and average
-        for j in range(t):
-            dist[i].append(sqrt((mean_estimate[i][j][0]-truth[j+1][0])**2 + (mean_estimate[i][j][1]-truth[j+1][1])**2))
-
-    for j in range(t):
-        for i in range(n):
-            #restructure for summation
-            diffsq[j].append(dist[i][j])
-        err_sum = 0
-        err_sum = np.sum(diffsq[j])
+    min_err = []
+    max_err = []
+    
+    for i in range(t):
+        dist_sq=[]
+        for j in range(n):
+            #compute the error
+            dist_sq.append((mean_estimate[j][i][0]-truth[i+1][0])**2 + (mean_estimate[j][i][1]-truth[i+1][1])**2)
+        err_sum = np.sum(dist_sq)
         RMSE = sqrt(err_sum/n)
         PRMSE.append(RMSE)
-    return PRMSE
+        min_err.append( sqrt( np.min(dist_sq) ) )
+        max_err.append( sqrt( np.max(dist_sq) ) )
+    # print('Returning RMSE',PRMSE)
+    # print('Returning min',min_err)
+    # print('Returning max',max_err)
+    
+    return PRMSE, min_err, max_err
 
 #---------------------------RESAMPLING METHODS-------------------------------#
 
@@ -318,7 +328,6 @@ def resample(N,weights,particles,select):
         particles: list of particles
         select: key to dict of desired method
     """
-    p_new = []
     if select == 1:
         p_new = systematic_resample(N,weights,particles)
     elif select == 2:
@@ -326,10 +335,11 @@ def resample(N,weights,particles,select):
     else:
         print("Not a valid resampling method")
 
-    return p_new
+    return p_new #This is a tuple!
 
 def systematic_resample(N,weights,particles):
     p_new = []
+    ancestry = []
     index = int(random.random()*N)
     beta = 0.0
     maxw = max(weights)
@@ -342,9 +352,10 @@ def systematic_resample(N,weights,particles):
             beta -= weights[index]
             index = (index + 1)% N
         p_new.append(particles[index].copy())
+        ancestry.append(index)
     particles = p_new
 
-    return particles
+    return particles, ancestry
 
 # Residual systematic
 def RS_resample(N,weights, particles):
@@ -357,7 +368,7 @@ def RS_resample(N,weights, particles):
     while j < N-1:
         j += 1
         Ns = floor(N*(weights[j]-U))+1
-        counter = 1;
+        counter = 1
         while counter <= Ns:
             index[i] = j
             i += 1
@@ -368,7 +379,7 @@ def RS_resample(N,weights, particles):
         p_new.append(particles[index[i]].copy())
     particles = p_new
 
-    return particles
+    return particles, index
 
 def ParticleState(particle):
     """Return the current particle state as numpy array"""
@@ -453,8 +464,8 @@ def caculate_flow_params(est,P,H,R,z,pmeasure,lam):
 def EnKF_update(particles, meas):
     N=len(particles)
     pred_meas=[]
-
     #First, compute the predicted measurements
+
     for i in range(N):
         pred_meas.append(particles[i].sense(False))
     pred_meas_mean = np.mean(pred_meas, 0)
@@ -470,7 +481,7 @@ def EnKF_update(particles, meas):
             state_diff[3] -= 2*np.pi
         if state_diff[3] < -np.pi:
             state_diff[3] += 2*np.pi
-        PH += np.outer(de_robot.state() - state_mean, meas_diff)
+        PH += np.outer( state_diff, meas_diff )
         HPH += np.outer(meas_diff, meas_diff)
     PH = PH / (N-1)
     HPH = HPH / (N-1)
@@ -478,6 +489,8 @@ def EnKF_update(particles, meas):
     # print('HPH is',HPH)
     # print('PH is',PH)
     # print('K is ',K)
+    # if (np.abs(K[3][0]) > .1):
+    #     print('Possible problem with \'K\'')
     #Now to apply K to all the particles
     out_particles=[]
     for i in range(N):
@@ -485,9 +498,9 @@ def EnKF_update(particles, meas):
         # print('Curr state is',particles[i].state())
         # print("delta_state is ",delta_state)
         next_state = particles[i].state() + delta_state
-        if (next_state[3] < 0):
+        while (next_state[3] < 0):
             next_state[3] += 2*np.pi
-        if (next_state[3] > 2*np.pi):
+        while (next_state[3] > 2*np.pi):
             next_state[3] -= 2*np.pi
         going_out = particles[i].copy()
         going_out.set( next_state[0], next_state[1], next_state[2], next_state[3] ) 

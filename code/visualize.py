@@ -98,25 +98,33 @@ def plot_paths(true_pos,mean_estimate,save_file_name=None):
     yt_pos = [i[1] for i in true_pos]
 
     plt.plot(xt_pos,yt_pos,'-o', color="blue", markeredgecolor="blue", label="Truth")
-
+    #TODO:  Should arrange colors so the same run has the same color, then have the markers (triangle, x, etc.) be the only difference and consistent across type
     for tr in range(trials):
+        #Note that if we have more than 10 trials, will have the same plots over again
+        color_string ="C"+str(tr%10)
         trial_label = "Flow Trial - " + str(tr+1)
         trial_label_std = "Std. Trial - " + str(tr+1)
         trial_label_enkf = "EnKF Trial - " + str(tr+1)
+        trial_label_aux = "Aux Trial - " + str(tr+1)
 
         xe_pos_flow = [i[0] for i in mean_estimate[0][tr]]
         ye_pos_flow = [i[1] for i in mean_estimate[0][tr]]
-        plt.plot(xe_pos_flow, ye_pos_flow, '-x', label=trial_label)
+        plt.plot(xe_pos_flow, ye_pos_flow, '-x', label=trial_label, color=color_string)
 
         if len(mean_estimate) > 1:
             xe_pos_std = [i[0] for i in mean_estimate[1][tr]]
             ye_pos_std = [i[1] for i in mean_estimate[1][tr]]
-            plt.plot(xe_pos_std, ye_pos_std, '-^', label=trial_label_std)
+            plt.plot(xe_pos_std, ye_pos_std, '-^', label=trial_label_std, color=color_string)
 
         if len(mean_estimate) > 2:
             xe_pos_enkf = [i[0] for i in mean_estimate[2][tr]]
             ye_pos_enkf = [i[1] for i in mean_estimate[2][tr]]
-            plt.plot(xe_pos_enkf,ye_pos_enkf,'-s' , label=trial_label_enkf)
+            plt.plot(xe_pos_enkf,ye_pos_enkf,'-s' , label=trial_label_enkf, color=color_string)
+
+        if len(mean_estimate) > 3:
+            xe_pos_aux = [i[0] for i in mean_estimate[3][tr]]
+            ye_pos_aux = [i[1] for i in mean_estimate[3][tr]]
+            plt.plot(xe_pos_aux,ye_pos_aux,'-+' , label=trial_label_aux, color=color_string)
 
     plt.legend()
     plt.xlabel('X (m)')
@@ -142,9 +150,13 @@ def plot_RMSE(RMSE, save_file_name=None):
             method = "Flow"
         elif m== 1:
             method = "Std."
-        else:
+        elif m==2:
             method = "ENkf"
-        plt.plot(RMSE[m],label=method)
+        else:
+            method = "Aux"
+        plt.errorbar(y=RMSE[m][0], x = range(len(RMSE[m][0])),
+                     yerr=[np.subtract(RMSE[m][0],RMSE[m][1]), np.subtract(RMSE[m][2],RMSE[m][0])], 
+                     label=method)
     plt.legend()
     plt.xlabel('Time (s)')
     plt.ylabel('RMSE (m)')
