@@ -120,13 +120,19 @@ import PF_Main
 fnoise = 0.1
 tnoise = math.radians(10)
 snoise = 1.0
-vnoise = 0.1 #velocity
+vnoise = 0.15 #velocity
 methods = [2]
-steps = 200
-trials = 10
-graphics = False
+steps = 150
+trials = 1
+graphics = True
+# num_parts_set = [50, 100, 200, 400]
+num_parts_set = [400]
 
-for n in range(50,201,50):
-    save_file_name = 'output/Results_bigTurnNoise_'+str(n)+'particles_'+str(trials)+'trials_'+str(steps)+'steps.npz'
-    PF_Main.two_filters(n, fnoise, vnoise, tnoise, snoise, steps, 
-                        trials, methods, graphics, save_file_name)
+for n in num_parts_set:
+    for start_loc in range(1) :
+        save_file_name = 'output/Results6_bigHeadingNoise_'+str(start_loc)+'random_start_'+str(n)+'particles_'+str(trials)+'trials_'+str(steps)+'steps.npz'
+        PF_Main.two_filters(n, fnoise, vnoise, tnoise, snoise, steps, 
+                            trials, methods, graphics, save_file_name)
+
+#Big turn noise = 10 degrees
+#Normal equals 1?

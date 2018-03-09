@@ -168,7 +168,6 @@ def create_uniform_particles(N, vnoise, tnoise, fnoise, snoise, v_init, world_si
     fnoise: forward noise
     
     snoise: sensing noise
-    v_init: initial velocity of the true robot
     world_size: size of the available area
     landmarks: measurement landmarks
 
@@ -424,7 +423,7 @@ def dot3(A,B,C):
     """ Returns the matrix multiplication of A*B*C"""
     return dot(A, dot(B, C))
 
-def caculate_flow_params(est,P,H,R,z,pmeasure,lam):
+def calculate_flow_params(est, P, H, R, z, pmeasure, lam):
     """
     Calculate the values for A and b for the given particle
 

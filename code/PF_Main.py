@@ -118,7 +118,7 @@ def PFPF(n, fnoise, tnoise, snoise, time_steps, trials, graphics):
                     pmeasure = p[tr][i].sense()
                     #calculate H mat for each particle
                     H = Robot.h_jacobian(pState, landmarks)
-                    A, b = Robot.caculate_flow_params(xbar, covar, H, R, z,
+                    A, b = Robot.calculate_flow_params(xbar, covar, H, R, z,
                                                       pmeasure, lam)
                     dxdl = dot(A, pState) + b
                     pState += (lam_vec[j]*dxdl)
@@ -303,7 +303,11 @@ def two_filters(n, fnoise, vnoise, tnoise, snoise, time_steps, trials, methods,
     U2 = [15.0,15.0,15.0,15.0,15.0,15.0,0,0,0,0,0,0,0,0,0,0,0,0]
 
     #Initialize robot states
-    state = [50.0, 50.0, 1.5, np.pi/2]
+    state = [random.uniform(10.0, 90.0), \
+             random.uniform(10.0, 90.0), \
+             random.uniform(1.75, 2.25), \
+             random.uniform(0.0, 2.0*np.pi)]
+    #state = [50.0, 50.0, 1.5, np.pi/2.0]
 
     Bot.set_noise(vnoise, tnoise, fnoise, snoise)
     Bot.set(state[0],state[1],state[2],state[3]) # Initial state of the robot
@@ -324,10 +328,10 @@ def two_filters(n, fnoise, vnoise, tnoise, snoise, time_steps, trials, methods,
     # create a list of lists for every trial
     # Have to do this carefully as Python doesn't like to actually copy things
     for i in range(trials):
-        # p_init = Robot.create_uniform_particles(n,fnoise,tnoise,snoise,state[2],
-        #                                         world_size,landmarks)
-        p_init = Robot.create_gaussian_particles(Bot,n, vnoise, tnoise, fnoise, snoise,20,
-                                                 world_size,landmarks)
+        p_init = Robot.create_uniform_particles(n, vnoise, tnoise, fnoise, snoise,state[2],
+                                                world_size,landmarks)
+        # p_init = Robot.create_gaussian_particles(Bot,n, vnoise, tnoise, fnoise, snoise,
+        #                                          world_size,landmarks)
 
         p_tmp1=[]
         p_tmp2=[]
@@ -407,7 +411,7 @@ def two_filters(n, fnoise, vnoise, tnoise, snoise, time_steps, trials, methods,
                     pmeasure = p[tr][i].sense(add_noise=False)
                     #calculate H mat for each particle
                     H = Robot.h_jacobian(pState,landmarks)
-                    A,b = Robot.caculate_flow_params(xbar,covar,H,R,z,pmeasure,lam)
+                    A,b = Robot.calculate_flow_params(xbar,covar,H,R,z,pmeasure,lam)
                     dxdl = dot(A,pState) + b
                     pState += (lam_vec[j]*dxdl)
                     pState[3] %= 2*np.pi #wrap heading value around
@@ -465,7 +469,8 @@ def two_filters(n, fnoise, vnoise, tnoise, snoise, time_steps, trials, methods,
             #If resampled, remove weight used to determine sampling from 
             #total weight of particle
             if aux_resampled:
-                w_aux[tr] = np.divide(w_aux[tr], w_test[ancestry])
+                tmp_array = np.array(w_tmp)
+                w_aux[tr] = np.divide(w_aux[tr], tmp_array[ancestry])
             
             xbar_aux, covar_aux = Robot.estimate(None, p_aux[tr])
             mean_estimate_aux[tr].append( xbar_aux )
@@ -475,10 +480,10 @@ def two_filters(n, fnoise, vnoise, tnoise, snoise, time_steps, trials, methods,
                 #arbitrarily select the first trial for graphics
                 if tr==0:
                     #Visualize the Auxiliary particle filter results
-                    # vis.visualize(Bot, t, p_aux[tr], p_aux[tr], w_aux[tr], xbar_aux)
+                    vis.visualize(Bot, t, p_aux[tr], p_aux[tr], w_aux[tr], xbar_aux)
 
                     #Visualize the EnKF results
-                    vis.visualize(Bot,t,p_enkf[0],p_enkf_next,w,xbar_enkf)
+                    # vis.visualize(Bot,t,p_enkf[0],p_enkf_next,w,xbar_enkf)
 
                     #Visualize the standard method
                     #vis.visualize(Bot,t,p_std_prior,p_std[tr],w,xbar_std)

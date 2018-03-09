@@ -6,7 +6,6 @@ Developed: Summer 2017"""
 
 
 import numpy as np
-from numpy.random import randn, random, uniform
 from math import *
 import matplotlib
 import matplotlib.pyplot as plt
@@ -83,7 +82,7 @@ class vis:
 
         plt.close()
 
-def plot_paths(true_pos,mean_estimate,save_file_name=None):
+def plot_paths(true_pos,mean_estimate,save_file_name=None, plot_name=None):
     """
     Params:
     -----------------
@@ -129,6 +128,8 @@ def plot_paths(true_pos,mean_estimate,save_file_name=None):
     plt.legend()
     plt.xlabel('X (m)')
     plt.ylabel('Y (m)')
+    if plot_name!= None:
+        plt.title(plot_name)
     ax.grid()
     gridlines = ax.get_xgridlines() + ax.get_ygridlines()
     for line in gridlines:
@@ -137,7 +138,7 @@ def plot_paths(true_pos,mean_estimate,save_file_name=None):
     if save_file_name!= None:
         plt.savefig(save_file_name)
 
-def plot_RMSE(RMSE, save_file_name=None):
+def plot_RMSE(RMSE, save_file_name=None, plot_name=None):
     """
     Params:
     -----------------
@@ -160,7 +161,10 @@ def plot_RMSE(RMSE, save_file_name=None):
     plt.legend()
     plt.xlabel('Time (s)')
     plt.ylabel('RMSE (m)')
-    plt.title("RMSE vs Time")
+    if plot_name == None:
+        plt.title("RMSE vs Time")
+    else:
+        plt.title(plot_name)
     ax.grid()
     gridlines = ax.get_xgridlines() + ax.get_ygridlines()
     for line in gridlines:
@@ -168,3 +172,33 @@ def plot_RMSE(RMSE, save_file_name=None):
     plt.show()
     if save_file_name!=None:
         plt.savefig(save_file_name)
+
+
+#start_loc=1 # typically goes 0 - 4
+n=400 #Typically goes 50, 100, ... 300
+
+#These next two are usually fixed across runs, but are in the filename.
+trials = 10
+steps = 150
+
+from Robot import PRMSE
+
+for start_loc in range(10):
+    input_filename = 'output/Results5_regularNoise_'+str(start_loc)+'random_start_'+str(n)+'particles_'+str(trials)+'trials_'+str(steps)+'steps.npz'
+    file_stuff = np.load(input_filename)
+
+    # #This is the code to plot the paths for this file:
+    # #plot_paths assumes [0] is pfpf, [1] is std, [2] is enkf, [3] is aux
+    # combined_ests = [file_stuff['pfpf_est'], file_stuff['std_est'], \
+    #                  file_stuff['enkf_mean'], file_stuff['aux_mean']]
+    # plot_paths(file_stuff['truth'], combined_ests, plot_name = 'Test1')                 
+
+    #Now for some code that plots the errors for each method
+    #First, find the RMSE for a given type of particle filter
+    std_rmse = PRMSE(file_stuff['truth'], file_stuff['std_est'])
+    pfpf_rmse = PRMSE(file_stuff['truth'], file_stuff['pfpf_est'])
+    aux_rmse = PRMSE(file_stuff['truth'], file_stuff['aux_mean'])
+    enkf_rmse = PRMSE(file_stuff['truth'], file_stuff['enkf_mean'])
+    rmse_list=[pfpf_rmse, std_rmse, enkf_rmse, aux_rmse ]
+    my_plot_name = 'RMSE, large heading noise, run '+str(start_loc)+', '+str(n)+' particles'
+    plot_RMSE(rmse_list, plot_name = my_plot_name)
