@@ -114,25 +114,71 @@ import PF_Main
 # visualize.plot_RMSE(PRMSE)
 # visualize.plot_paths(truth, est)
 
+###### This one is to try to find a case where the aux is doing significantly worse
+#than the standard
 
 #A new version that just runs through a loop, storing files as it goes.
 #All visualization / analysis to come later
 fnoise = 0.1
-tnoise = math.radians(10)
+tnoise = math.radians(1)
 snoise = 1.0
 vnoise = 0.15 #velocity
 methods = [2]
-steps = 150
+steps = 50
 trials = 1
 graphics = True
+start_seed = 857601
 # num_parts_set = [50, 100, 200, 400]
-num_parts_set = [400]
-
+num_parts_set = [200]
+look_at_list=[]
 for n in num_parts_set:
     for start_loc in range(1) :
-        save_file_name = 'output/Results6_bigHeadingNoise_'+str(start_loc)+'random_start_'+str(n)+'particles_'+str(trials)+'trials_'+str(steps)+'steps.npz'
-        PF_Main.two_filters(n, fnoise, vnoise, tnoise, snoise, steps, 
-                            trials, methods, graphics, save_file_name)
+        save_file_name = None  #'output/Results6_bigHeadingNoise_'+str(start_loc)+'random_start_'+str(n)+'particles_'+str(trials)+'trials_'+str(steps)+'steps.npz'
+        my_seed = start_seed + start_loc*13
+        res=PF_Main.two_filters(n, fnoise, vnoise, tnoise, snoise, steps, 
+                                trials, methods, 
+                                graphics, 
+                                result_save_filename=save_file_name, 
+                                random_seed = my_seed)
+        std_err = res[2][1][2]
+        aux_err = res[2][3][2]
+        print('With seed',my_seed,'std error is:',std_err[-1], 'aux error is:', aux_err[-1])
+        if (aux_err[-1] > 5.0 and (aux_err[-1] > std_err[-1])):
+            look_at_list.append(my_seed)
+        print('std_err is:',std_err)
+        print('aux_err is:',aux_err)
+print('These may be some good seeds to look at...')
+print(look_at_list)
+
+import matplotlib
+import matplotlib.pyplot as plt
+plt.plot(aux_err)
+plt.plot(std_err)
+plt.show()
 
 #Big turn noise = 10 degrees
 #Normal equals 1?
+
+########  How I was running things before
+
+# #A new version that just runs through a loop, storing files as it goes.
+# #All visualization / analysis to come later
+# fnoise = 0.1
+# tnoise = math.radians(10)
+# snoise = 1.0
+# vnoise = 0.15 #velocity
+# methods = [2]
+# steps = 150
+# trials = 1
+# graphics = True
+# # num_parts_set = [50, 100, 200, 400]
+# num_parts_set = [400]
+
+# for n in num_parts_set:
+#     for start_loc in range(1) :
+#         save_file_name = 'output/Results6_bigHeadingNoise_'+str(start_loc)+'random_start_'+str(n)+'particles_'+str(trials)+'trials_'+str(steps)+'steps.npz'
+#         PF_Main.two_filters(n, fnoise, vnoise, tnoise, snoise, steps, 
+#                             trials, methods, graphics, save_file_name)
+
+# #Big turn noise = 10 degrees
+# #Normal equals 1?

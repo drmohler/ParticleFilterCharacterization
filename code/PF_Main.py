@@ -9,7 +9,6 @@ import Robot
 # import ekf
 import visualize
 import numpy as np
-from numpy.random import randn, random, uniform
 from numpy import dot
 # from filterpy.common import dot3
 from math import *
@@ -268,7 +267,7 @@ def ParticleFilt(n, fnoise, tnoise, snoise, time_steps, trials, methods, graphic
 #--------------------------------------------------------------------------#
 #--------------------------------------------------------------------------#
 def two_filters(n, fnoise, vnoise, tnoise, snoise, time_steps, trials, methods, 
-                graphics, result_save_filename=None):
+                graphics, result_save_filename=None, random_seed=None):
     """
         This functions runs both standard and flow particle filters on
         the same set of initial data for performance comparisons.
@@ -281,6 +280,9 @@ def two_filters(n, fnoise, vnoise, tnoise, snoise, time_steps, trials, methods,
         methods: list of desired resampling methods for comparison
     """
     #--------------------PARTICLE FILTERING OPERATIONS--------------------------#
+    np.random.seed(random_seed)
+    random.seed(random_seed)
+
     nLambda = 29
     true_state = []
     p_init = []
@@ -307,7 +309,7 @@ def two_filters(n, fnoise, vnoise, tnoise, snoise, time_steps, trials, methods,
              random.uniform(10.0, 90.0), \
              random.uniform(1.75, 2.25), \
              random.uniform(0.0, 2.0*np.pi)]
-    #state = [50.0, 50.0, 1.5, np.pi/2.0]
+    # state = [50.0, 50.0, 1.5, np.pi/2.0]
 
     Bot.set_noise(vnoise, tnoise, fnoise, snoise)
     Bot.set(state[0],state[1],state[2],state[3]) # Initial state of the robot
@@ -395,7 +397,7 @@ def two_filters(n, fnoise, vnoise, tnoise, snoise, time_steps, trials, methods,
                 p_std[tr], _ = Robot.resample(n, w_std[tr], p_std[tr], methods[0])
                 w_std[tr] = [1/n]*n
             xbar_std, covar_std = Robot.estimate(w_std[tr], p_std[tr])
-#            print("Std:  mean is (after resample)", xbar_std)
+            # print("Std:  error is (after resample)", xbar_std[0:2]-true_state[-1][0:2])
             mean_estimate_std[tr].append(xbar_std)
             covar_estimate_std[tr].append(covar_std)
 
@@ -404,6 +406,12 @@ def two_filters(n, fnoise, vnoise, tnoise, snoise, time_steps, trials, methods,
             xbar, covar = Robot.estimate(w,p[tr])
 
             lam = 0
+
+            # ### For Visualization only
+            # p_prior=[] 
+            # for i in range(n):
+            #     p_prior.append(p[tr][i].copy())
+
             for j in range(nLambda):
                 lam += lam_vec[j] #pseudo time step
                 for i in range(len(p[tr])):
@@ -431,6 +439,7 @@ def two_filters(n, fnoise, vnoise, tnoise, snoise, time_steps, trials, methods,
             xbar_enkf, covar_enkf = Robot.estimate(None, p_enkf_next)
             mean_estimate_enkf[tr].append(xbar_enkf)
             covar_estimate_enkf[tr].append(covar_enkf)
+            p_enkf[tr] = p_enkf_next
             # print('ENKF covar is',np.diag(covar_enkf))
             # print('ENKF mean state is',xbar_enkf)
             # print('ENKF error is',xbar_enkf[0:2]-true_pos[-1])
@@ -455,6 +464,13 @@ def two_filters(n, fnoise, vnoise, tnoise, snoise, time_steps, trials, methods,
                 w_test = [1/n]*n
             else:
                 w_test /= test_total
+            plt.plot(w_test)
+            hdg_list=[]
+            for i in range(n):
+                hdg_list.append(p_aux[tr][i].hdg)
+            plt.plot(hdg_list)
+            plt.show()
+            plt.close()
             test_neff = int(Robot.neff(w_test)) #calculate the effective sample size
             aux_resampled = (test_neff < (n*0.5))
             if aux_resampled:
@@ -475,19 +491,24 @@ def two_filters(n, fnoise, vnoise, tnoise, snoise, time_steps, trials, methods,
             xbar_aux, covar_aux = Robot.estimate(None, p_aux[tr])
             mean_estimate_aux[tr].append( xbar_aux )
             covar_estimate_aux[tr].append( covar_aux )
+            #print("Aux:  error is ", xbar_aux[0:2]-true_state[-1][0:2])
+            
             #----------------Print out the pretty pictures with particles----------#
             if graphics:
                 #arbitrarily select the first trial for graphics
                 if tr==0:
                     #Visualize the Auxiliary particle filter results
-                    vis.visualize(Bot, t, p_aux[tr], p_aux[tr], w_aux[tr], xbar_aux)
+                    # vis.visualize(Bot, t, p_aux[tr], p_aux[tr], w_aux[tr], xbar_aux)
 
                     #Visualize the EnKF results
                     # vis.visualize(Bot,t,p_enkf[0],p_enkf_next,w,xbar_enkf)
 
                     #Visualize the standard method
-                    #vis.visualize(Bot,t,p_std_prior,p_std[tr],w,xbar_std)
-            p_enkf[tr] = p_enkf_next
+                    vis.visualize(Bot,t,p_std_prior,p_std[tr],w,xbar_std)
+
+                    #Visualize the PFPF method
+                    # vis.visualize(Bot,t,p_prior,p[tr],w,xbar)
+            
 
     if result_save_filename != None:
         print('Saving file', result_save_filename)
